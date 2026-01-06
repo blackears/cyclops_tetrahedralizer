@@ -1,20 +1,13 @@
-﻿// Cyclops Tessellate.cpp : Defines the entry point for the application.
-//
 
 #include <iostream>
-
 using namespace std;
 
-#ifdef CYCLOPS_TESS_LIB
-void tessellate_tetrahedra(float* points) {
-
-#else
+#ifndef CYCLOPS_TESS_LIB
 
 int main()
 {
-	cout << "Hello CMake2." << endl;
+	cout << "Hello CMake3." << endl;
 	return 0;
 }
-
 
 #endif
