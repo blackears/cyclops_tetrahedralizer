@@ -26,6 +26,52 @@
 using namespace std;
 using namespace CyclopsTessellate3D;
 
+//https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py
 
-void CyclopsTess3D::tessellate_tetrahedra(float* points) {
+template<typename T>
+Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const {
+    //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
+
+    //From Matthias Muller
+    //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
+
+    Vector3<T> b = p1 - p0;
+    Vector3<T> c = p2 - p0;
+    Vector3<T> d = p3 - p0;
+ 
+    T det = 2.0 * (b.x * (c.y * d.z - c.z * d.y) 
+        - b.y * (c.x * d.z - c.z * d.x) 
+        + b.z * (c.x * d.y - c.y * d.x));
+
+    if (det == 0.0) {
+        return p0;
+    }
+    else {
+        Vector3<T> v = c.cross(d) * b.dot(b) + d.cross(b) * c.dot(c) + b.cross(c) * d.dot(d);
+        v /= det;
+        return p0 + v;
+    }
+}
+
+// Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> v0, Vector3<T> v1, Vector3<T> v2, Vector3<T> v3) const {
+//     //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
+
+//     //Row vectors
+//     Matrix3x3 A(v1 - v0,
+//         v2 - v0,
+//         v3 - v0);
+    
+//     Vector3 b(v1.dot(v1) - v0.dot(v0), 
+//         v2.dot(v2) - v0.dot(v0),
+//         v3.dot(v3) - v0.dot(v0)) / 2.0;
+
+//     Vector c = A.inverse() * b;
+    
+//     return c;
+// }
+
+
+
+template<typename T>
+void CyclopsTess3D<T>::tessellate_tetrahedra(float* points) {
 }

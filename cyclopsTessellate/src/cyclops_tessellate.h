@@ -25,8 +25,71 @@
 
 namespace CyclopsTessellate3D {
 
+//typedef float real_t;
+
+template<typename T = float>
+struct Vector3 {
+    T x;
+    T y;
+    T z;
+
+    Vector3<T> cross(const Vector3<T> a) const { return Vector3(y * a.z - z * a.y, z * a.x - x * a.z, x * a.y - y * a.x); }
+    T dot(const Vector3<T> a) const { return x * a.x + y * a.y + z * a.z; }
+
+    Vector3<T>& operator+=(const Vector3<T>& rhs) {
+        this->x += rhs.x;
+        this->y += rhs.y;
+        return *this;
+    }
+
+    friend Vector3<T> operator+(Vector3<T> lhs, const Vector3<T>& rhs) {
+        lhs += rhs;
+        return lhs;
+    }
+
+    Vector3<T>& operator-=(const Vector3<T>& rhs) {
+        this->x -= rhs.x;
+        this->y -= rhs.y;
+        return *this;
+    }
+
+    friend Vector3<T> operator-(Vector3<T> lhs, const Vector3<T>& rhs) {
+        lhs -= rhs;
+        return lhs;
+    }
+};
+
+struct Triangle {
+    int v0_idx;
+    int v1_idx;
+    int v2_idx;
+};
+
+template<typename T = float>
+struct Tetrahedron {
+    int v0_idx;
+    int v1_idx;
+    int v2_idx;
+    int v3_idx;
+
+    Vector3<T> calc_circum_center(Vector3<T> v0, Vector3<T> v1, Vector3<T> v2, Vector3<T> v3) const;
+};
+
+// class Point3D {
+//     real_t x;
+//     real_t y;
+//     real_t z;
+// };
+
+
+
+template<typename T = float>
 class CyclopsTess3D {
-    void tessellate_tetrahedra(float*);
+    Vector3<T>* point_list;
+
+public:
+
+    void tessellate_tetrahedra(float* mesh_points);
 
 };
 
