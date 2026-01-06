@@ -18,7 +18,21 @@ project (CyclopsTessellate
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(BUILD_EXECUTABLE "Build executable" ON)
+option(BUILD_LIBRARY "Build library" OFF)
+
+
 file(GLOB_RECURSE sources src/*.cpp src/*.h)
 
-add_executable(cyclopsTessellate ${sources})
+if(BUILD_LIBRARY)
+  add_library(cyclopsTessellateLib STATIC ${sources})
+  #Add compile time property
+  target_compile_definitions(cyclopsTessellateLib PRIVATE -DCYCLOPS_TESS_LIB)
+endif()
+
+if(BUILD_EXECUTABLE)
+  add_executable(cyclopsTessellate ${sources})
+endif()
+
+
 
