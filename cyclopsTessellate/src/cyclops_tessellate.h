@@ -20,6 +20,11 @@
  * SOFTWARE.
  */
 
+/*
+ * Substantial portions of this are based on Matthias Muller's tetrahedralizer adon for Blender.
+ * https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py
+ */
+
 #ifndef CYCLOPS_TESSELLATE_H
 #define CYCLOPS_TESSELLATE_H
 
@@ -33,6 +38,10 @@ struct Vector3 {
     T y;
     T z;
 
+    Vector3() : x(0), y(0), z(0) {}
+    Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
+
+    T magnitude() const { return sqrt(x * x + y * y + z * z); }
     Vector3<T> cross(const Vector3<T> a) const { return Vector3(y * a.z - z * a.y, z * a.x - x * a.z, x * a.y - y * a.x); }
     T dot(const Vector3<T> a) const { return x * a.x + y * a.y + z * a.z; }
 
@@ -59,11 +68,11 @@ struct Vector3 {
     }
 };
 
-struct Triangle {
-    int v0_idx;
-    int v1_idx;
-    int v2_idx;
-};
+// struct Triangle {
+//     int v0_idx;
+//     int v1_idx;
+//     int v2_idx;
+// };
 
 template<typename T = float>
 struct Tetrahedron {
@@ -72,14 +81,24 @@ struct Tetrahedron {
     int v2_idx;
     int v3_idx;
 
-    Vector3<T> calc_circum_center(Vector3<T> v0, Vector3<T> v1, Vector3<T> v2, Vector3<T> v3) const;
+    Vector3<T> calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const;
+
+    T quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const;
 };
 
-// class Point3D {
-//     real_t x;
-//     real_t y;
-//     real_t z;
-// };
+
+template<typename T = float>
+class BVHTree {
+
+    public:
+
+    void build_from_triangles(Vector3<T>* tri_points);
+
+    void ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal, int &out_index, T &out_hit_distance) const;
+
+    bool is_inside(Vector3<T> p, T dist_min = 0.0) const;
+
+};
 
 
 

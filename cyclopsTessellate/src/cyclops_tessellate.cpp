@@ -53,6 +53,33 @@ Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vect
     }
 }
 
+//return value on [0 - 1] where 1 is a perfect tetrahedron
+template<typename T>
+T Tetrahedron<T>::quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const {
+    Vector3<T> d0 = p1 - p0;
+    Vector3<T> d1 = p2 - p0;
+    Vector3<T> d2 = p3 - p0;
+    Vector3<T> d3 = p2 - p1;
+    Vector3<T> d4 = p3 - p2;
+    Vector3<T> d5 = p1 - p3;
+
+    T s0 = d0.magnitude();
+    T s1 = d1.magnitude();
+    T s2 = d2.magnitude();
+    T s3 = d3.magnitude();
+    T s4 = d4.magnitude();
+    T s5 = d5.magnitude();
+
+    T ms = (s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4 + s5 * s5) / 6.0;
+    T rms = sqrt(ms);
+
+    T s = 12.0 / sqrt(2.0);
+
+    T vol = d0.dot(d1.cross(d2)) / 6.0;
+    return s * vol / (rms * rms * rms);
+}
+
+
 // Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> v0, Vector3<T> v1, Vector3<T> v2, Vector3<T> v3) const {
 //     //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
 
@@ -70,6 +97,58 @@ Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vect
 //     return c;
 // }
 
+// template<typename T>
+// bool BVHTree<T>::is_inside(Vector3<T> p, T dist_min) const {
+//     return true;
+// }
+
+template<typename T>
+void BVHTree<T>::build_from_triangles(Vector3<T>* tri_points) {
+
+}
+
+template<typename T>
+bool BVHTree<T>::is_inside(Vector3<T> p, T dist_min) const {
+    //Check multiple directions to minimize chance of hitting an edge
+    const Vector3[T] dirs = {
+        Vector3<T>(1,0,0),
+        Vector3<T>(-1,0,0),
+        Vector3<T>(0,1,0),
+        Vector3<T>(0,-1,0),
+        Vector3<T>(0,0,1),
+        Vector3<T>(0,0,-1)
+    };
+
+    int num_inside = 0;
+
+    for (int i = 0; i < 6; i++) {
+        Vector3<T> hit_pos;
+        Vector3<T> hit_normal;
+        int hit_index;
+        T hit_distance;
+
+        this->ray_cast(p, dirs[i], 1e10, hit_pos, hit_normal, hit_index, hit_distance);
+        
+        //Check hit is valid
+        if (hit_index >= 0) {
+            if (hit_normal.dot(dirs[i]) > 0) {
+                num_inside++;
+            }
+
+            if (dist_min > 0.0 && hit_distance < dist_min) {
+                //If hit outside face, we are outside
+                return false;
+            }
+        }
+    }
+
+    return num_inside >= 3;
+}
+
+template<typename T>
+void BVHTree<T>::ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, Vector3<T> &hit_pos, Vector3<T> &hit_normal, int &index, T &hit_distance) const {
+
+}
 
 
 template<typename T>
