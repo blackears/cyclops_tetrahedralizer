@@ -28,6 +28,8 @@
 #ifndef CYCLOPS_TESSELLATE_H
 #define CYCLOPS_TESSELLATE_H
 
+#include  <vector>
+
 namespace CyclopsTessellate3D {
 
 //typedef float real_t;
@@ -42,8 +44,11 @@ struct Vector3 {
     Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
 
     T magnitude() const { return sqrt(x * x + y * y + z * z); }
-    Vector3<T> cross(const Vector3<T> a) const { return Vector3(y * a.z - z * a.y, z * a.x - x * a.z, x * a.y - y * a.x); }
-    T dot(const Vector3<T> a) const { return x * a.x + y * a.y + z * a.z; }
+    Vector3<T> cross(const Vector3<T> rhs) const { return Vector3<T>(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x); }
+    T dot(const Vector3<T> rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
+
+    Vector3<T> min(const Vector3<T> rhs) const { return Vector3<T>(min(x, rhs.x), min(y, rhs.y), min(z, rhs.z)); }
+    Vector3<T> max(const Vector3<T> rhs) const { return Vector3<T>(max(x, rhs.x), max(y, rhs.y), max(z, rhs.z)); }
 
     Vector3<T>& operator+=(const Vector3<T>& rhs) {
         this->x += rhs.x;
@@ -92,7 +97,8 @@ class BVHTree {
 
     public:
 
-    void build_from_triangles(Vector3<T>* tri_points);
+//    void build_from_triangles(Vector3<T>* tri_points, int num_points);
+    void build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices);
 
     void ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal, int &out_index, T &out_hit_distance) const;
 
@@ -103,12 +109,21 @@ class BVHTree {
 
 
 template<typename T = float>
-class CyclopsTess3D {
+class CyclopsTetrahedralizer {
     Vector3<T>* point_list;
 
-public:
+private:
+    void create_tetrahedron_ids(const std::vector<Vector3<T>>& points, BVHTree<T>& bvh_tree, float quality_threshold);
 
-    void tessellate_tetrahedra(float* mesh_points);
+public:
+    //@param points of triangles
+    //@param indices of triangles (3 per triangle)
+    //@param resolution spacing for extra interior points
+    //@param quality_threshold minimum quality for tetrahedrons.  0.0 to 1.0, with 1.0 being equilateral tetrahedra.
+    void create_tetrahedrons(const std::vector<Vector3<T>>& points, const std::vector<int>& indices, float resolution = .1, float quality_threshold = 0.001);
+
+
+    //void tessellate_tetrahedra(float* mesh_points);
 
 };
 

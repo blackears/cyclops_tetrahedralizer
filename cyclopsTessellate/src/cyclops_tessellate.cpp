@@ -23,6 +23,8 @@
 
 #include "cyclops_tessellate.h"
 
+#include <random>
+
 using namespace std;
 using namespace CyclopsTessellate3D;
 
@@ -103,7 +105,7 @@ T Tetrahedron<T>::quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T
 // }
 
 template<typename T>
-void BVHTree<T>::build_from_triangles(Vector3<T>* tri_points) {
+void BVHTree<T>::build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices) {
 
 }
 
@@ -151,6 +153,93 @@ void BVHTree<T>::ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, V
 }
 
 
+// template<typename T>
+// void CyclopsTetrahedralizer<T>::tessellate_tetrahedra(float* points) {
+// }
+
+// template<typename T>
+// void CyclopsTetrahedralizer<T>::create_tetrahedrons(const Vector3<T>* points, int num_points) {
+
+//     std::vector<Vector3<T>> pts(points, std::next(points, num_points));
+
+//     create_tetrahedrons(pts);
+
+// }
+
 template<typename T>
-void CyclopsTess3D<T>::tessellate_tetrahedra(float* points) {
+void create_tetrahedron_ids(const std::vector<Vector3<T>>& points, BVHTree<T>& bvh_tree, float quality_threshold) {
+
+}
+
+template<typename T>
+void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>>& points, 
+    const std::vector<int>& indices, 
+    float resolution,
+    float quality_threshold) {
+
+    //Create BVH from input triangles
+    BVHTree<T> bvh_tree;
+    bvh_tree.build_from_triangles(points, indices);
+
+
+    std::vector<Vector3<T>> tess_points;
+
+    //Add jitter to points to avoid degenerate cases
+    std::random_device r;
+    std::default_random_engine rng_eng(r());
+    std::uniform_real_distribution<T> rand_eps(-1e-5, 1e-5);
+
+    tess_points.reserve(points.size());
+    for (const Vector3<T>& p : points) {
+        Vector3<T> jit_p = p + Vector3<T>(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
+        tess_points.push_back(jit_p);
+    }
+
+    //Find bounding box
+    Vector3<T> bb_min = tess_points[0];
+    Vector3<T> bb_max = tess_points[0];
+    for (const Vector3<T>& p : tess_points) {
+        bb_min = bb_min.min(p);
+        bb_max = bb_max.max(p);
+    }
+
+    //Add extra points for interior of mesh
+    Vector3<T> bb_size = bb_max - bb_min;
+    float max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
+
+    if (resolution > 0) {
+        int h = max_dim / resolution;
+
+        for (int xi = 0; xi <= int(bb_size.x / h); xi++) {
+            float x = bb_min.x + xi * h + rand_eps(rng_eng);
+            for (int yi = 0; yi <= int(bb_size.y / h); yi++) {
+                float y = bb_min.y + yi * h + rand_eps(rng_eng);
+                for (int zi = 0; zi <= int(bb_size.z / h); zi++) {
+                    float z = bb_min.z + zi * h + rand_eps(rng_eng);
+                    Vector3<T> p = Vector3<T>(x, y, z);
+
+                    if (bvh_tree.is_inside(p)) {
+                        tess_points.push_back(p);
+                    }
+                }
+            }
+        }
+    }
+
+    //Find bounding tetrahedron
+    Vector3<T> bb_center = (bb_min + bb_max) / 2.0;
+    //Vector3<T> bb_size = bb_max - bb_min;
+    Vector3<T> btet_v0 = bb_min;
+    Vector3<T> btet_v1 = bb_min + Vector3<T>(bb_size.x * 3.0, 0, 0);
+    Vector3<T> btet_v2 = bb_min + Vector3<T>(0, bb_size.y * 3.0, 0);
+    Vector3<T> btet_v3 = bb_min + Vector3<T>(0, 0, bb_size.z * 3.0);
+    //Add margin
+    btet_v0 += (btet_v0 - bb_center) * 0.1;
+    btet_v1 += (btet_v1 - bb_center) * 0.1;
+    btet_v2 += (btet_v2 - bb_center) * 0.1;
+    btet_v3 += (btet_v3 - bb_center) * 0.1;
+
+    //Create tetrahedrons
+    create_tetrahedron_ids(tess_points, bvh_tree, quality_threshold);
+
 }
