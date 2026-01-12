@@ -71,6 +71,28 @@ struct Vector3 {
         lhs -= rhs;
         return lhs;
     }
+
+    Vector3<T>& operator*=(T rhs) {
+        this->x *= rhs;
+        this->y *= rhs;
+        return *this;
+    }
+
+    friend Vector3<T> operator*(Vector3<T> lhs, T rhs) {
+        lhs *= rhs;
+        return lhs;
+    }
+
+    Vector3<T>& operator/=(T rhs) {
+        this->x /= rhs;
+        this->y /= rhs;
+        return *this;
+    }
+
+    friend Vector3<T> operator/(Vector3<T> lhs, T rhs) {
+        lhs /= rhs;
+        return lhs;
+    }
 };
 
 // struct Triangle {
@@ -109,7 +131,7 @@ struct BoundingBox {
         return BoundingBox<T>(new_bb_min, new_bb_max);
     }
 
-    Vector3<T> centroid() const {
+    Vector3<T> center() const {
         return (bb_min + bb_max) / 2.0;
     }
 
@@ -139,7 +161,8 @@ struct BVHTreeNode {
     BoundingBox<T> bounds;
 
     unsigned int child_left_idx;
-    //uint child_right_idx;
+    //Right child is child_left_idx + 1
+
     unsigned int first_primitive_offset;
     unsigned int num_primitives;
 
@@ -155,44 +178,15 @@ struct BVHTreeNode {
     }
 };
 
-
-
-// template<typename T = float>
-// struct BVHTreeNode {
-//     int tri_idx;
-//     BoundingBox<T> bounds;
-//     Vector3<T> centroid;
-
-//     BVHTreeNode *[2] children;
-//     int split_axis;
-//     int first_primitive_offset;
-//     int num_primitives;
-
-//     BVHTreeNode() : tri_idx(-1), bounds(BoundingBox<T>()), centroid(Vector3<T>()),
-//         children{ nullptr, nullptr }, split_axis(-1), first_primitive_offset(-1), num_primitives(0) {}
-    
-//     void set_children(BVHTreeNode* left, BVHTreeNode* right) {
-//         children[0] = left;
-//         children[1] = right;
-//         bounds = left->bounds.union(right->bounds);
-//         centroid = bounds.centroid();
-//     }
-    
-// };
-
 //https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
 template<typename T = float>
 class BVHTree {
-    // std::vector<std::shared_ptr<BVHTreeTriangle<T>>> primitives;
-    // std::vector<std::shared_ptr<BVHTreeNode<T>>> nodes;
-    std::vector<BVHTreeTriangle<T>> primitives;
+    std::vector<BVHTreeTriangle<T>> triangles;
     std::vector<BVHTreeNode<T>> nodes;
 
-//    void build_from_triangles_recursive(const std::vector<Vector3<T>>& prim_info, int start, int end, const std::vector<Vector3<T>>& ordered_prims);
     void build_nodes_recursive(int root_node_idx, int& nodes_used);
 
 public:
-
     void build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices);
 
     void ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal, int &out_index, T &out_hit_distance) const;

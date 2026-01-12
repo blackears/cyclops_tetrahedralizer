@@ -113,26 +113,26 @@ void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     T midpoint
     if (bb_size.x >= bb_size.y && bb_size.x >= bb_size.z) {
         axis = 0;
-        midpoint = bb_size.x / 2.0 + root_node.bounds.bb_min;
+        midpoint = bb_size.x / 2.0 + root_node.bounds.bb_min.x;
     }
     else if (bb_size.y >= bb_size.z) {
         axis = 1;
-        midpoint = bb_size.y / 2.0 + root_node.bounds.bb_min;
+        midpoint = bb_size.y / 2.0 + root_node.bounds.bb_min.y;
     }
     else {
         axis = 2;
-        midpoint = bb_size.z / 2.0 + root_node.bounds.bb_min;
+        midpoint = bb_size.z / 2.0 + root_node.bounds.bb_min.z;
     }
 
     //Partition primitives around midpoint - sort subpartions
     int i = root_node.first_primitive_offset;
     int j = i + root_node.num_primitives - 1;
     while (i <= j) {
-        BVHTreeTriangle<T>& prim = primitives[i];
-        if (prim.centroid[axis] < midpoint) {
+        BVHTreeTriangle<T>& tri = triangles[i];
+        if (tri.centroid[axis] < midpoint) {
             i++;
         } else {
-            swap(primitives[i], primitives[j]);
+            swap(triangles[i], triangles[j]);
             j--;
         }
     }
@@ -142,30 +142,31 @@ void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
         return; //Cannot split further
     }
 
-    root_node.child_left_idx = nodes_used++;
-    root_node.child_right_idx = nodes_used++;
-    nodes[root_node.child_left_idx].first_primitive_offset = root_node.first_primitive_offset;
-    nodes[root_node.child_left_idx].num_primitives = left_count;
-    nodes[root_node.child_left_idx].update_bounds(primitives, nodes);
-    nodes[root_node.child_right_idx].first_primitive_offset = i;
-    nodes[root_node.child_right_idx].num_primitives = root_node.num_primitives - left_count;
-    nodes[root_node.child_right_idx].update_bounds(primitives, nodes);
+    //Next two nodes in node list with be children of this node
+    nodes[nodes_used].first_primitive_offset = root_node.first_primitive_offset;
+    nodes[nodes_used].num_primitives = left_count;
+    nodes[nodes_used].update_bounds(triangles, nodes);
+
+    nodes[nodes_used + 1].first_primitive_offset = i;
+    nodes[nodes_used + 1].num_primitives = root_node.num_primitives - left_count;
+    nodes[nodes_used + 1].update_bounds(triangles, nodes);
     
-    root_node.left_child_idx = root_node.child_left_idx;
+    root_node.left_child_idx = nodes_used;
     root_node.num_primitives = 0;
+    nodes_used += 2;
 
     //Recurse
     build_nodes_recursive(root_node.child_left_idx, nodes_used);
-    build_nodes_recursive(root_node.child_right_idx, nodes_used);
+    build_nodes_recursive(root_node.child_left_idx + 1, nodes_used);
 }
 
 template<typename T>
 void BVHTree<T>::build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices) {
     nodes.clear();
-    primitives.clear();
+    triangles.clear();
 
     nodes.resize(indices.size() / 3 * 2 - 1);
-    primitives.reserve(indices.size() / 3);
+    triangles.reserve(indices.size() / 3);
 
     for (int i = 0; i < indices.size() / 3; i++) {
         int idx0 = indices[i * 3 + 0];
@@ -177,20 +178,17 @@ void BVHTree<T>::build_from_triangles(const std::vector<Vector3<T>>& points, con
         Vector3<T> v2 = points[idx2];
 
         BVHTreeTriangle<T> prim = BVHTreeTriangle<T>(v0, v1, v2);
-        primitives.push_back(prim);
-
-        // BVHTreePrimitive<T> prim = BVHTreePrimitive<T>(i / 3, 
-        //     BoundingBox<T>(v0.min(v1).min(v2), v0.max(v1).max(v2)));
-        // primitives.push_back(prim);
+        triangles.push_back(prim);
     }
 
     nodes[0].left_child_idx = 0;
     nodes[0].right_child_idx = 0;
     nodes[0].first_primitive_offset = 0;
-    nodes[0].num_primitives = primitives.size();
+    nodes[0].num_primitives = triangles.size();
     nodes[0].update_bounds();
 
-
+    int nodes_used = 1;
+    build_nodes_recursive(0, nodes_used);
 }
 
 template<typename T>
