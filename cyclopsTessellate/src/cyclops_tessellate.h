@@ -91,13 +91,108 @@ struct Tetrahedron {
     T quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const;
 };
 
+template<typename T>
+struct BoundingBox {
+    Vector3<T> bb_min;
+    Vector3<T> bb_max;
+
+    BoundingBox() : bb_min(Vector3<T>()), bb_max(Vector3<T>()) {}
+    BoundingBox(Vector3<T> bb_min, Vector3<T> bb_max) : bb_min(bb_min), bb_max(bb_max) {}
+
+    BoundingBox<T> merge(const BoundingBox<T>& other) const {
+        Vector3<T> new_bb_min = Vector3<T>(std::min(bb_min.x, other.bb_min.x),
+            std::min(bb_min.y, other.bb_min.y),
+            std::min(bb_min.z, other.bb_min.z));
+        Vector3<T> new_bb_max = Vector3<T>(std::max(bb_max.x, other.bb_max.x),
+            std::max(bb_max.y, other.bb_max.y),
+            std::max(bb_max.z, other.bb_max.z));
+        return BoundingBox<T>(new_bb_min, new_bb_max);
+    }
+
+    Vector3<T> centroid() const {
+        return (bb_min + bb_max) / 2.0;
+    }
+
+    Vector3<T> size() const {
+        return bb_max - bb_min;
+    }
+
+};
+
 
 template<typename T = float>
+struct BVHTreeTriangle {
+    Vector3<T> p0;
+    Vector3<T> p1;
+    Vector3<T> p2; 
+    Vector3<T> centroid;
+    BoundingBox<T> bounds;
+
+    BVHTreeTriangle(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2)
+        : p0(p0), p1(p1), p2(p2),
+        bounds(BoundingBox<T>(p0.min(p1).min(p2), p0.max(p1).max(p2))),
+        centroid((p0 + p1 + p2) / 3.0) {}
+};
+
+template<typename T = float>
+struct BVHTreeNode {
+    BoundingBox<T> bounds;
+
+    unsigned int child_left_idx;
+    //uint child_right_idx;
+    unsigned int first_primitive_offset;
+    unsigned int num_primitives;
+
+    void update_bounds(const std::vector<BVHTreeTriangle<T>>& primitives, const std::vector<BVHTreeNode<T>>& nodes) {
+        if (num_primitives > 0) {
+            bounds = primitives[first_primitive_offset].bounds;
+            for (unsigned int i = 1; i < num_primitives; i++) {
+                bounds = bounds.merge(primitives[first_primitive_offset + i].bounds);
+            }
+        } else {
+            bounds = nodes[child_left_idx].bounds.merge(nodes[child_left_idx + 1].bounds);
+        }
+    }
+};
+
+
+
+// template<typename T = float>
+// struct BVHTreeNode {
+//     int tri_idx;
+//     BoundingBox<T> bounds;
+//     Vector3<T> centroid;
+
+//     BVHTreeNode *[2] children;
+//     int split_axis;
+//     int first_primitive_offset;
+//     int num_primitives;
+
+//     BVHTreeNode() : tri_idx(-1), bounds(BoundingBox<T>()), centroid(Vector3<T>()),
+//         children{ nullptr, nullptr }, split_axis(-1), first_primitive_offset(-1), num_primitives(0) {}
+    
+//     void set_children(BVHTreeNode* left, BVHTreeNode* right) {
+//         children[0] = left;
+//         children[1] = right;
+//         bounds = left->bounds.union(right->bounds);
+//         centroid = bounds.centroid();
+//     }
+    
+// };
+
+//https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
+template<typename T = float>
 class BVHTree {
+    // std::vector<std::shared_ptr<BVHTreeTriangle<T>>> primitives;
+    // std::vector<std::shared_ptr<BVHTreeNode<T>>> nodes;
+    std::vector<BVHTreeTriangle<T>> primitives;
+    std::vector<BVHTreeNode<T>> nodes;
 
-    public:
+//    void build_from_triangles_recursive(const std::vector<Vector3<T>>& prim_info, int start, int end, const std::vector<Vector3<T>>& ordered_prims);
+    void build_nodes_recursive(int root_node_idx, int& nodes_used);
 
-//    void build_from_triangles(Vector3<T>* tri_points, int num_points);
+public:
+
     void build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices);
 
     void ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal, int &out_index, T &out_hit_distance) const;

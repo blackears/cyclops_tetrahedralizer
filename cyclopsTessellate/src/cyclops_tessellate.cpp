@@ -105,7 +105,91 @@ T Tetrahedron<T>::quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T
 // }
 
 template<typename T>
+void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
+    BVHTreeNode<T>& root_node = nodes[root_node_idx];
+
+    Vector3<T> bb_size = root_node.bounds.size();
+    int axis;
+    T midpoint
+    if (bb_size.x >= bb_size.y && bb_size.x >= bb_size.z) {
+        axis = 0;
+        midpoint = bb_size.x / 2.0 + root_node.bounds.bb_min;
+    }
+    else if (bb_size.y >= bb_size.z) {
+        axis = 1;
+        midpoint = bb_size.y / 2.0 + root_node.bounds.bb_min;
+    }
+    else {
+        axis = 2;
+        midpoint = bb_size.z / 2.0 + root_node.bounds.bb_min;
+    }
+
+    //Partition primitives around midpoint - sort subpartions
+    int i = root_node.first_primitive_offset;
+    int j = i + root_node.num_primitives - 1;
+    while (i <= j) {
+        BVHTreeTriangle<T>& prim = primitives[i];
+        if (prim.centroid[axis] < midpoint) {
+            i++;
+        } else {
+            swap(primitives[i], primitives[j]);
+            j--;
+        }
+    }
+    
+    int left_count = i - root_node.first_primitive_offset;
+    if (left_count == 0 || left_count == root_node.num_primitives) {
+        return; //Cannot split further
+    }
+
+    root_node.child_left_idx = nodes_used++;
+    root_node.child_right_idx = nodes_used++;
+    nodes[root_node.child_left_idx].first_primitive_offset = root_node.first_primitive_offset;
+    nodes[root_node.child_left_idx].num_primitives = left_count;
+    nodes[root_node.child_left_idx].update_bounds(primitives, nodes);
+    nodes[root_node.child_right_idx].first_primitive_offset = i;
+    nodes[root_node.child_right_idx].num_primitives = root_node.num_primitives - left_count;
+    nodes[root_node.child_right_idx].update_bounds(primitives, nodes);
+    
+    root_node.left_child_idx = root_node.child_left_idx;
+    root_node.num_primitives = 0;
+
+    //Recurse
+    build_nodes_recursive(root_node.child_left_idx, nodes_used);
+    build_nodes_recursive(root_node.child_right_idx, nodes_used);
+}
+
+template<typename T>
 void BVHTree<T>::build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices) {
+    nodes.clear();
+    primitives.clear();
+
+    nodes.resize(indices.size() / 3 * 2 - 1);
+    primitives.reserve(indices.size() / 3);
+
+    for (int i = 0; i < indices.size() / 3; i++) {
+        int idx0 = indices[i * 3 + 0];
+        int idx1 = indices[i * 3 + 1];
+        int idx2 = indices[i * 3 + 2];
+
+        Vector3<T> v0 = points[idx0];
+        Vector3<T> v1 = points[idx1];
+        Vector3<T> v2 = points[idx2];
+
+        BVHTreeTriangle<T> prim = BVHTreeTriangle<T>(v0, v1, v2);
+        primitives.push_back(prim);
+
+        // BVHTreePrimitive<T> prim = BVHTreePrimitive<T>(i / 3, 
+        //     BoundingBox<T>(v0.min(v1).min(v2), v0.max(v1).max(v2)));
+        // primitives.push_back(prim);
+    }
+
+    nodes[0].left_child_idx = 0;
+    nodes[0].right_child_idx = 0;
+    nodes[0].first_primitive_offset = 0;
+    nodes[0].num_primitives = primitives.size();
+    nodes[0].update_bounds();
+
 
 }
 
