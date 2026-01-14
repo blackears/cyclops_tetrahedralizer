@@ -53,6 +53,7 @@ struct Vector3 {
     Vector3<T>& operator+=(const Vector3<T>& rhs) {
         this->x += rhs.x;
         this->y += rhs.y;
+        this->z += rhs.z;
         return *this;
     }
 
@@ -64,6 +65,7 @@ struct Vector3 {
     Vector3<T>& operator-=(const Vector3<T>& rhs) {
         this->x -= rhs.x;
         this->y -= rhs.y;
+        this->z -= rhs.z;
         return *this;
     }
 
@@ -75,6 +77,7 @@ struct Vector3 {
     Vector3<T>& operator*=(T rhs) {
         this->x *= rhs;
         this->y *= rhs;
+        this->z *= rhs;
         return *this;
     }
 
@@ -86,6 +89,7 @@ struct Vector3 {
     Vector3<T>& operator/=(T rhs) {
         this->x /= rhs;
         this->y /= rhs;
+        this->z /= rhs;
         return *this;
     }
 
@@ -93,13 +97,34 @@ struct Vector3 {
         lhs /= rhs;
         return lhs;
     }
+
+
+    Vector3<T>& operator*=(Vector3<T> rhs) {
+        this->x *= rhs.x;
+        this->y *= rhs.y;
+        this->z *= rhs.z;
+        return *this;
+    }
+
+    friend Vector3<T> operator*(Vector3<T> lhs, Vector3<T> rhs) {
+        lhs *= rhs;
+        return lhs;
+    }
+
+    Vector3<T>& operator/=(Vector3<T> rhs) {
+        this->x /= rhs.x;
+        this->y /= rhs.y;
+        this->z /= rhs.z;
+        return *this;
+    }
+
+    friend Vector3<T> operator/(Vector3<T> lhs, Vector3<T> rhs) {
+        lhs /= rhs;
+        return lhs;
+    }
+
 };
 
-// struct Triangle {
-//     int v0_idx;
-//     int v1_idx;
-//     int v2_idx;
-// };
 
 template<typename T = float>
 struct Tetrahedron {
@@ -139,6 +164,19 @@ struct BoundingBox {
         return bb_max - bb_min;
     }
 
+    bool intersects_ray(Vector3<T> ray_origin, Vector3<T> ray_direction) {
+        //Slab method
+        //https://en.wikipedia.org/wiki/Slab_method
+        Vector3<T> t_low = (bb_min - ray_origin) / ray_direction;
+        Vector3<T> t_high = (bb_max - ray_origin) / ray_direction;
+
+        Vector3<T> t_close = t_low.min(t_high);
+        Vector3<T> t_far = t_low.max(t_high);
+
+        T t_close_max = std::max(std::max(t_close.x, t_close.y), t_close.z);
+        T t_far_min = std::min(std::min(t_far.x, t_far.y), t_far.z);
+        return t_close_max <= t_far_min;
+    }
 };
 
 
@@ -154,6 +192,42 @@ struct BVHTreeTriangle {
         : p0(p0), p1(p1), p2(p2),
         bounds(BoundingBox<T>(p0.min(p1).min(p2), p0.max(p1).max(p2))),
         centroid((p0 + p1 + p2) / 3.0) {}
+    
+    bool intersect_ray(const Vector3<T>& ray_origin, const Vector3<T>& ray_direction, Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal) const {
+        Vector3<T> edge1 = p1 - p0;
+        Vector3<T> edge2 = p2 - p0;
+        Vector3<T> h = ray_direction.cross(edge2);
+        T a = edge1.dot(h);
+        if (a > -1e-5 && a < 1e-5) {
+            return false; // This ray is parallel to this triangle.
+        }
+        T f = 1.0 / a;
+        Vector3<T> s = ray_origin - p0;
+        T u = f * s.dot(h);
+        if (u < 0.0 || u > 1.0) {
+            return false;
+        }
+        Vector3<T> q = s.cross(edge1);
+        T v = f * ray_direction.dot(q);
+        if (v < 0.0 || u + v > 1.0) {
+            return false;
+        }
+        // At this stage we can compute t to find out where the intersection point is on the line.
+        T t = f * edge2.dot(q);
+        if (t > 1e-5) { // ray intersection
+            //out_hit_distance = t;
+            //out_hit_pos = ray_origin + ray_direction * t;
+            //out_hit_normal = edge1.cross(edge2).normalize();
+            //out_index = triangle_index;
+
+            out_hit_pos = ray_origin + ray_direction * t;
+            out_hit_normal = edge1.cross(edge2).normalize();
+            return true;
+        }
+        
+        // This means that there is a line intersection but not a ray intersection.
+        return false;
+}
 };
 
 template<typename T = float>
@@ -163,19 +237,59 @@ struct BVHTreeNode {
     unsigned int child_left_idx;
     //Right child is child_left_idx + 1
 
-    unsigned int first_primitive_offset;
-    unsigned int num_primitives;
+    unsigned int first_triangle_offset;
+    unsigned int num_triangles;
 
-    void update_bounds(const std::vector<BVHTreeTriangle<T>>& primitives, const std::vector<BVHTreeNode<T>>& nodes) {
-        if (num_primitives > 0) {
-            bounds = primitives[first_primitive_offset].bounds;
-            for (unsigned int i = 1; i < num_primitives; i++) {
-                bounds = bounds.merge(primitives[first_primitive_offset + i].bounds);
+    bool is_leaf() const {
+        return num_triangles > 0;
+    }
+
+    void update_bounds(const std::vector<BVHTreeTriangle<T>>& triangles, const std::vector<BVHTreeNode<T>>& nodes) {
+        if (num_triangles > 0) {
+            bounds = triangles[first_triangle_offset].bounds;
+            for (unsigned int i = 1; i < num_triangles; i++) {
+                bounds = bounds.merge(triangles[first_triangle_offset + i].bounds);
             }
         } else {
             bounds = nodes[child_left_idx].bounds.merge(nodes[child_left_idx + 1].bounds);
         }
     }
+
+    bool ray_cast(Vector3<T> ray_origin, Vector3<T> ray_direction, 
+        const std::vector<BVHTreeTriangle<T>>& triangles, const std::vector<BVHTreeNode<T>>& nodes,
+        Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal, int &out_index) const {
+
+        if (!bounds.intersects_ray(ray_origin, ray_direction))
+            return false;
+        if (is_leaf()) {
+            for (unsigned int i = 0; i < num_triangles; i++) {
+                if (triangles[first_triangle_offset + i].intersect_ray(ray_origin, ray_direction, out_hit_pos, out_hit_normal)) {
+                    out_index = first_triangle_offset + i;
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return nodes[child_left_idx].ray_cast(ray_origin, ray_direction, triangles, nodes, out_hit_pos, out_hit_normal, out_index) ||
+                nodes[child_left_idx + 1].ray_cast(ray_origin, ray_direction, triangles, nodes, out_hit_pos, out_hit_normal, out_index);
+        }
+    }
+
+    // bool intersects_ray(Vector3<T> ray_origin, Vector3<T> ray_direction, const std::vector<BVHTreeTriangle<T>>& primitives, const std::vector<BVHTreeNode<T>>& nodes) {
+    //     if (bounds.intersects_ray(ray_origin, ray_direction))
+    //         return true;
+    //     if (is_leaf()) {
+    //         for (unsigned int i = 0; i < num_triangles; i++) {
+    //             if (primitives[first_triangle_offset + i].bounds.intersects_ray(ray_origin, ray_direction))
+    //                 return true;
+    //         }
+    //         return false;
+    //     } else {
+    //         return nodes[child_left_idx].intersects_ray(ray_origin, ray_direction, primitives, nodes) ||
+    //             nodes[child_left_idx + 1].intersects_ray(ray_origin, ray_direction, primitives, nodes);
+    //     }
+    // }
+
 };
 
 //https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
@@ -187,9 +301,11 @@ class BVHTree {
     void build_nodes_recursive(int root_node_idx, int& nodes_used);
 
 public:
+    //@param points of triangles
+    //@param indices of triangles (3 per triangle)
     void build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices);
 
-    void ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal, int &out_index, T &out_hit_distance) const;
+    bool ray_cast(Vector3<T> ray_origin, Vector3<T> ray_direction, Vector3<T> &out_hit_pos, Vector3<T> &out_hit_normal, int &out_index) const;
 
     bool is_inside(Vector3<T> p, T dist_min = 0.0) const;
 

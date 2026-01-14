@@ -28,3 +28,14 @@ Open CyclopsTessellate.sln project in Visual Studio and build all.
 ```
 make
 ```
+
+### Credits
+
+
+
+How to build a BVH
+jbikker
+//https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
+
+Bounding Box Ray Intersection
+https://en.wikipedia.org/wiki/Slab_method

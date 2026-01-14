@@ -82,28 +82,6 @@ T Tetrahedron<T>::quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T
 }
 
 
-// Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> v0, Vector3<T> v1, Vector3<T> v2, Vector3<T> v3) const {
-//     //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
-
-//     //Row vectors
-//     Matrix3x3 A(v1 - v0,
-//         v2 - v0,
-//         v3 - v0);
-    
-//     Vector3 b(v1.dot(v1) - v0.dot(v0), 
-//         v2.dot(v2) - v0.dot(v0),
-//         v3.dot(v3) - v0.dot(v0)) / 2.0;
-
-//     Vector c = A.inverse() * b;
-    
-//     return c;
-// }
-
-// template<typename T>
-// bool BVHTree<T>::is_inside(Vector3<T> p, T dist_min) const {
-//     return true;
-// }
-
 template<typename T>
 void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     BVHTreeNode<T>& root_node = nodes[root_node_idx];
@@ -126,7 +104,7 @@ void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
 
     //Partition primitives around midpoint - sort subpartions
     int i = root_node.first_primitive_offset;
-    int j = i + root_node.num_primitives - 1;
+    int j = i + root_node.num_triangles - 1;
     while (i <= j) {
         BVHTreeTriangle<T>& tri = triangles[i];
         if (tri.centroid[axis] < midpoint) {
@@ -137,22 +115,22 @@ void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
         }
     }
     
-    int left_count = i - root_node.first_primitive_offset;
-    if (left_count == 0 || left_count == root_node.num_primitives) {
+    int left_count = i - root_node.first_triangle_offset;
+    if (left_count == 0 || left_count == root_node.num_triangles) {
         return; //Cannot split further
     }
 
     //Next two nodes in node list with be children of this node
-    nodes[nodes_used].first_primitive_offset = root_node.first_primitive_offset;
+    nodes[nodes_used].first_primitive_offset = root_node.first_triangle_offset;
     nodes[nodes_used].num_primitives = left_count;
     nodes[nodes_used].update_bounds(triangles, nodes);
 
     nodes[nodes_used + 1].first_primitive_offset = i;
-    nodes[nodes_used + 1].num_primitives = root_node.num_primitives - left_count;
+    nodes[nodes_used + 1].num_primitives = root_node.num_triangles - left_count;
     nodes[nodes_used + 1].update_bounds(triangles, nodes);
     
     root_node.left_child_idx = nodes_used;
-    root_node.num_primitives = 0;
+    root_node.num_triangles = 0;
     nodes_used += 2;
 
     //Recurse
@@ -177,8 +155,8 @@ void BVHTree<T>::build_from_triangles(const std::vector<Vector3<T>>& points, con
         Vector3<T> v1 = points[idx1];
         Vector3<T> v2 = points[idx2];
 
-        BVHTreeTriangle<T> prim = BVHTreeTriangle<T>(v0, v1, v2);
-        triangles.push_back(prim);
+        BVHTreeTriangle<T> tri = BVHTreeTriangle<T>(v0, v1, v2);
+        triangles.push_back(tri);
     }
 
     nodes[0].left_child_idx = 0;
@@ -209,9 +187,9 @@ bool BVHTree<T>::is_inside(Vector3<T> p, T dist_min) const {
         Vector3<T> hit_pos;
         Vector3<T> hit_normal;
         int hit_index;
-        T hit_distance;
 
-        this->ray_cast(p, dirs[i], 1e10, hit_pos, hit_normal, hit_index, hit_distance);
+        nodes[0].ray_cast(p, dirs[i], 1e10, hit_pos, hit_normal, hit_index);
+        T hit_distance = (hit_pos - p).magnitude();
         
         //Check hit is valid
         if (hit_index >= 0) {
@@ -230,23 +208,10 @@ bool BVHTree<T>::is_inside(Vector3<T> p, T dist_min) const {
 }
 
 template<typename T>
-void BVHTree<T>::ray_cast(Vector3<T> origin, Vector3<T> direction, T distance, Vector3<T> &hit_pos, Vector3<T> &hit_normal, int &index, T &hit_distance) const {
-
+bool BVHTree<T>::ray_cast(Vector3<T> ray_origin, Vector3<T> ray_direction, Vector3<T> &hit_pos, Vector3<T> &hit_normal, int &out_index) const {
+    return nodes[0].ray_cast(ray_origin, ray_direction, hit_pos, hit_normal, out_index);
 }
 
-
-// template<typename T>
-// void CyclopsTetrahedralizer<T>::tessellate_tetrahedra(float* points) {
-// }
-
-// template<typename T>
-// void CyclopsTetrahedralizer<T>::create_tetrahedrons(const Vector3<T>* points, int num_points) {
-
-//     std::vector<Vector3<T>> pts(points, std::next(points, num_points));
-
-//     create_tetrahedrons(pts);
-
-// }
 
 template<typename T>
 void create_tetrahedron_ids(const std::vector<Vector3<T>>& points, BVHTree<T>& bvh_tree, float quality_threshold) {
