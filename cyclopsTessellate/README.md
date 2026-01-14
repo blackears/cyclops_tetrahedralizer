@@ -29,13 +29,15 @@ Open CyclopsTessellate.sln project in Visual Studio and build all.
 make
 ```
 
-### Credits
+### References
 
-
+Tetrahedronalizer plugin for Blender
+Matthias Muller
+(https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py)
 
 How to build a BVH
 jbikker
-//https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
+(https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
 
 Bounding Box Ray Intersection
-https://en.wikipedia.org/wiki/Slab_method
+(https://en.wikipedia.org/wiki/Slab_method)
