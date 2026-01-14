@@ -43,6 +43,7 @@ struct Vector3 {
     Vector3() : x(0), y(0), z(0) {}
     Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
 
+    T magnitude_squared() const { return x * x + y * y + z * z; }
     T magnitude() const { return sqrt(x * x + y * y + z * z); }
     Vector3<T> cross(const Vector3<T> rhs) const { return Vector3<T>(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x); }
     T dot(const Vector3<T> rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
@@ -126,18 +127,6 @@ struct Vector3 {
 };
 
 
-template<typename T = float>
-struct Tetrahedron {
-    int v0_idx;
-    int v1_idx;
-    int v2_idx;
-    int v3_idx;
-
-    Vector3<T> calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const;
-
-    T quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const;
-};
-
 template<typename T>
 struct BoundingBox {
     Vector3<T> bb_min;
@@ -215,11 +204,6 @@ struct BVHTreeTriangle {
         // At this stage we can compute t to find out where the intersection point is on the line.
         T t = f * edge2.dot(q);
         if (t > 1e-5) { // ray intersection
-            //out_hit_distance = t;
-            //out_hit_pos = ray_origin + ray_direction * t;
-            //out_hit_normal = edge1.cross(edge2).normalize();
-            //out_index = triangle_index;
-
             out_hit_pos = ray_origin + ray_direction * t;
             out_hit_normal = edge1.cross(edge2).normalize();
             return true;
@@ -227,7 +211,7 @@ struct BVHTreeTriangle {
         
         // This means that there is a line intersection but not a ray intersection.
         return false;
-}
+    }
 };
 
 template<typename T = float>
@@ -311,14 +295,72 @@ public:
 
 };
 
+template<typename T = float>
+struct Plane {
+    Vector3<T> normal;
+    //distance along normal from origin to plane
+    T dot_origin;
 
+    Plane() : normal(Vector3<T>()), dot_origin(0) {}
+    Plane(const Vector3<T>& normal, T origin) : normal(normal), dot_origin(origin.dot(normal)) {}
+    Plane(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2) : normal((p1 - p0).cross(p2 - p0)), dot_origin(p0.dot(normal)) {}
+    
+    T distance_to_plane(const Vector3<T>& p) const {
+        return normal.dot(p) - dot_origin;
+    }
+
+    bool intersect_ray(const Vector3<T>& ray_origin, const Vector3<T>& ray_direction, Vector3<T>& out_intersection) const {
+        T denom = normal.dot(ray_direction);
+        if (denom == 0.0) {
+            return false;
+        }
+        T numer = dot_origin - normal.dot(ray_origin);
+
+        T s = numer / denom;
+        out_intersection = ray_origin + ray_direction * s;
+        return true;
+    }
+};
+
+
+template<typename T = float>
+struct Tetrahedron {
+    //constexpr int tet_faces[4][3] = {{2,1,0}, {0,1,3}, {1,2,3}, {2,0,3}};
+
+    int v0_idx;
+    int v1_idx;
+    int v2_idx;
+    int v3_idx;
+
+    int neighbors[4];
+
+    Vector3<T> circumcenter;
+    Vector3<T> center;
+
+    Plane<T> face_planes[4];
+
+    bool valid;
+
+    void create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3<T>>& points);
+
+    Vector3<T> calc_circumcenter(const std::vector<Vector3<T>>& points) const;
+    bool point_in_circumsphere(const Vector3<T>& p, const std::vector<Vector3<T>>& points) const {
+        return (circumcenter - p).magnitude_squared() < (circumcenter - points[v0_idx]).magnitude_squared();
+    }
+    bool contains_point(const Vector3<T>& p, const std::vector<Vector3<T>>& points) const;
+    int find_adjacent_tetrahedron(const Vector3<T>& dir, const std::vector<Vector3<T>>& points) const;
+    T quality(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, const Vector3<T>& p3) const;
+};
 
 template<typename T = float>
 class CyclopsTetrahedralizer {
     Vector3<T>* point_list;
 
 private:
-    void create_tetrahedron_ids(const std::vector<Vector3<T>>& points, BVHTree<T>& bvh_tree, float quality_threshold);
+//    void create_tetrahedrons_internal(const std::vector<Vector3<T>>& points, BVHTree<T>& bvh_tree, float quality_threshold);
+    void create_tetrahedrons_iter(std::vector<Tetrahedron<T>>& tetrahedrons, const BVHTree<T>& bvh_tree, const std::vector<Vector3<T>>& points);
+
+//    Vector3<T> calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const;
 
 public:
     //@param points of triangles

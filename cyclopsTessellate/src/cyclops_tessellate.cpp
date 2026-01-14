@@ -28,14 +28,40 @@
 using namespace std;
 using namespace CyclopsTessellate3D;
 
-//https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py
+template<typename T>
+void Tetrahedron<T>::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3<T>>& points) {
+    this->v0_idx = v0_idx;
+    this->v1_idx = v1_idx;
+    this->v2_idx = v2_idx;
+    this->v3_idx = v3_idx;
+
+    this->circumcenter = calc_circumcenter(points);
+    this->center = (points[v0_idx] + points[v1_idx] + points[v2_idx] + points[v3_idx]) / 4.0;
+
+    Vector3<T> p0 = points[v0_idx];
+    Vector3<T> p1 = points[v1_idx];
+    Vector3<T> p2 = points[v2_idx];
+    Vector3<T> p3 = points[v3_idx];
+
+    //Should all be facing inside
+    face_planes[0] = Plane<T>(p2, p1, p0);
+    face_planes[1] = Plane<T>(p0, p1, p3);
+    face_planes[2] = Plane<T>(p1, p2, p3);
+    face_planes[3] = Plane<T>(p2, p0, p3);
+
+    valid = true;
+}
 
 template<typename T>
-Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const {
+Vector3<T> Tetrahedron<T>::calc_circumcenter(const std::vector<Vector3<T>>& points) const {
     //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
 
     //From Matthias Muller
     //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
+    Vector3<T> p0 = points[v0_idx];
+    Vector3<T> p1 = points[v1_idx];
+    Vector3<T> p2 = points[v2_idx];
+    Vector3<T> p3 = points[v3_idx];
 
     Vector3<T> b = p1 - p0;
     Vector3<T> c = p2 - p0;
@@ -53,11 +79,44 @@ Vector3<T> Tetrahedron<T>::calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vect
         v /= det;
         return p0 + v;
     }
+
+}
+
+template<typename T>
+bool Tetrahedron<T>::contains_point(const Vector3<T>& p, const std::vector<Vector3<T>>& points) const {
+    for (int i = 0; i < 4; i++) {
+        T dist = face_planes[i].distance_to_plane(p);
+        if (dist <= 0.0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<typename T>
+int Tetrahedron<T>::find_adjacent_tetrahedron(const Vector3<T>& dir, const std::vector<Vector3<T>>& points) const {
+    //constexpr int[][] tet_faces = {{2,1,0}, {0,1,3}, {1,2,3}, {2,0,3}};
+
+    T best_dist = std::numeric_limits<T>::infinity();
+    int best_face = -1;
+    for (int i = 0; i < 4; i++) {
+        Vector3<T> p_intersect;
+        if (face_planes[i].intersect_ray(center, dir, p_intersect)) {
+            Vector3<T> offset = p_intersect - center;
+            T dist = offset.dot(dir);
+            if (dist > 0.0 && dist < best_dist) {
+                best_dist = dist;
+                best_face = i;
+            }
+        }
+    }
+
+    return neighbors[best_face];
 }
 
 //return value on [0 - 1] where 1 is a perfect tetrahedron
 template<typename T>
-T Tetrahedron<T>::quality(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const {
+T Tetrahedron<T>::quality(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, const Vector3<T>& p3) const {
     Vector3<T> d0 = p1 - p0;
     Vector3<T> d1 = p2 - p0;
     Vector3<T> d2 = p3 - p0;
@@ -214,11 +273,6 @@ bool BVHTree<T>::ray_cast(Vector3<T> ray_origin, Vector3<T> ray_direction, Vecto
 
 
 template<typename T>
-void create_tetrahedron_ids(const std::vector<Vector3<T>>& points, BVHTree<T>& bvh_tree, float quality_threshold) {
-
-}
-
-template<typename T>
 void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>>& points, 
     const std::vector<int>& indices, 
     float resolution,
@@ -228,15 +282,14 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
     BVHTree<T> bvh_tree;
     bvh_tree.build_from_triangles(points, indices);
 
-
     std::vector<Vector3<T>> tess_points;
+    tess_points.reserve(points.size() + 4);
 
     //Add jitter to points to avoid degenerate cases
     std::random_device r;
     std::default_random_engine rng_eng(r());
     std::uniform_real_distribution<T> rand_eps(-1e-5, 1e-5);
 
-    tess_points.reserve(points.size());
     for (const Vector3<T>& p : points) {
         Vector3<T> jit_p = p + Vector3<T>(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
         tess_points.push_back(jit_p);
@@ -245,7 +298,7 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
     //Find bounding box
     Vector3<T> bb_min = tess_points[0];
     Vector3<T> bb_max = tess_points[0];
-    for (const Vector3<T>& p : tess_points) {
+    for (int i = 1; i < tess_points.size(); i++) {
         bb_min = bb_min.min(p);
         bb_max = bb_max.max(p);
     }
@@ -275,7 +328,7 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
 
     //Find bounding tetrahedron
     Vector3<T> bb_center = (bb_min + bb_max) / 2.0;
-    //Vector3<T> bb_size = bb_max - bb_min;
+    Vector3<T> bb_size = bb_max - bb_min;
     Vector3<T> btet_v0 = bb_min;
     Vector3<T> btet_v1 = bb_min + Vector3<T>(bb_size.x * 3.0, 0, 0);
     Vector3<T> btet_v2 = bb_min + Vector3<T>(0, bb_size.y * 3.0, 0);
@@ -286,7 +339,116 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
     btet_v2 += (btet_v2 - bb_center) * 0.1;
     btet_v3 += (btet_v3 - bb_center) * 0.1;
 
-    //Create tetrahedrons
-    create_tetrahedron_ids(tess_points, bvh_tree, quality_threshold);
+    tess_points.push_back(btet_v0);
+    tess_points.push_back(btet_v1);
+    tess_points.push_back(btet_v2);
+    tess_points.push_back(btet_v3);
 
+    //Create tetrahedrons
+    //create_tetrahedrons_internal(tess_points, bvh_tree, quality_threshold);
+
+    std::vector<Tetrahedron<T>> tetrahedrons;
+    Tetrahedron<T> tetra;
+    tetra.create_from_points(
+        int(tess_points.size() - 4),
+        int(tess_points.size() - 3),
+        int(tess_points.size() - 2),
+        int(tess_points.size() - 1),
+        points);
+    tetrahedrons.push_back(tetra);
+
+    create_tetrahedrons_iter(tetrahedrons, bvh_tree, tess_points);
+}
+
+template<typename T>
+void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron<T>>& tetrahedrons, const BVHTree<T>& bvh_tree, const std::vector<Vector3<T>>& points) {
+    for (int i = 0; i < points.size() - 4; i++) {
+        Vector3<T> p = points[i];
+
+        int tet_idx = 0;
+
+        //Walk toward containing tetrahedron
+        while (tet_idx != -1) {
+            Tetrahedron<T>& tet = tetrahedrons[tet_idx];
+            if (tet.contains_point(p, points)) {
+                break;
+            }
+
+            tet_idx = tet.find_adjacent_tetrahedron(p - tet.center, points);
+        }
+
+        if (tet_idx == -1) {
+            //Could not find containing tetrahedron
+            continue;
+        }
+
+        //Find tetrahedra with circumspheres containing point
+//        bad_tet_candidates.push_back(tet_idx);
+
+        Tetrahedron<T>& tet = tetrahedrons[tet_idx];
+        tet.valid = false;
+
+        std::vector<int> bad_tet_indices;
+
+        std::vector<std::tuple<int, int>> bad_tet_candidates;
+        for (int i = 0; i < 4; ++i) {
+            bad_tet_candidates.push_back(std::make_tuple(tet_idx, i));
+        }
+
+        //std::vector<int> bad_tet_checked;
+        std::vector<std::tuple<int, int>> outer_faces;
+
+        while (!bad_tet_candidates.empty())
+        {
+            auto [current_tet_idx, face_idx] = bad_tet_candidates.back();
+            bad_tet_candidates.pop_back();
+
+            Tetrahedron<T>& current_tet = tetrahedrons[current_tet_idx];
+
+            int neighbor_idx = current_tet.neighbors[face_idx];
+            if (neighbor_idx == -1) {
+                outer_faces.push_back(std::make_tuple(current_tet_idx, face_idx));
+            }
+            else {
+                Tetrahedron<T>& neighbor_tet = tetrahedrons[neighbor_idx];
+                if (!neighbor_tet.valid) {
+                    continue;
+                }
+
+                if (neighbor_tet.point_in_circumsphere(p, points)) {
+                    bad_tet_indices.push_back(neighbor_idx);
+                    neighbor_tet.valid = false;
+
+                    for (int i = 0; i < 4; ++i) {
+                        bad_tet_candidates.push_back(std::make_tuple(neighbor_idx, i));
+                    }
+                }
+                else {
+                    outer_faces.push_back(std::make_tuple(current_tet_idx, face_idx));
+                }
+            }
+            
+        }
+
+        // while (!bad_tet_candidates.empty()) {
+        //     int current_tet_idx = bad_tet_candidates.back();
+        //     bad_tet_candidates.pop_back();
+
+        //     Tetrahedron<T>& current_tet = tetrahedrons[current_tet_idx];
+
+        //     bad_tet_checked.push_back(current_tet_idx);
+
+        //     if (current_tet.point_in_circumsphere(p, points)) {
+        //         bad_tet_indices.push_back(current_tet_idx);
+
+        //         for (int i = 0; i < 4; ++i) {
+        //             int neighbor_idx = current_tet.neighbors[i];
+        //             if (neighbor_idx != -1 && std::find(bad_tet_checked.begin(), bad_tet_checked.end(), neighbor_idx) == bad_tet_checked.end())
+        //                 bad_tet_candidates.push_back(neighbor_idx);
+        //         }
+        //     }
+        // }
+
+
+    }
 }
