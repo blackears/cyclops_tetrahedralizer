@@ -323,15 +323,14 @@ struct Plane {
 };
 
 
+//Face winding - face normals points outward
 template<typename T = float>
 struct Tetrahedron {
-    //constexpr int tet_faces[4][3] = {{2,1,0}, {0,1,3}, {1,2,3}, {2,0,3}};
+    //Vertex ordering per face
+    static constexpr int face_vert_indices[4][3] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 2}, {0, 2, 3}};
+    static constexpr int face_missing_vert_index[4] = {3, 2, 0, 1};
 
-    int v0_idx;
-    int v1_idx;
-    int v2_idx;
-    int v3_idx;
-
+    int vert_indices[4];
     int neighbors[4];
 
     Vector3<T> circumcenter;
@@ -350,6 +349,25 @@ struct Tetrahedron {
     bool contains_point(const Vector3<T>& p, const std::vector<Vector3<T>>& points) const;
     int find_adjacent_tetrahedron(const Vector3<T>& dir, const std::vector<Vector3<T>>& points) const;
     T quality(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, const Vector3<T>& p3) const;
+
+    //vertex indices must wind face outward
+    int find_face(int v0_idx, int v1_idx, int v2_idx) const {
+        for (int i = 0; i < 4; i++) {
+            if ((vert_indices[face_vert_indices[i][0]] == v0_idx &&
+                 vert_indices[face_vert_indices[i][1]] == v1_idx &&
+                 vert_indices[face_vert_indices[i][2]] == v2_idx) ||
+                (vert_indices[face_vert_indices[i][0]] == v1_idx &&
+                 vert_indices[face_vert_indices[i][1]] == v2_idx &&
+                 vert_indices[face_vert_indices[i][2]] == v0_idx) ||
+                (vert_indices[face_vert_indices[i][0]] == v2_idx &&
+                 vert_indices[face_vert_indices[i][1]] == v0_idx &&
+                 vert_indices[face_vert_indices[i][2]] == v1_idx)) {
+                return i;
+            }
+        }
+        return -1;
+
+    }
 };
 
 template<typename T = float>
