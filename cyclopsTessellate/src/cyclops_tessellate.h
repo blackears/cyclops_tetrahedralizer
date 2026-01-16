@@ -337,11 +337,20 @@ struct Tetrahedron {
     Vector3<T> center;
 
     Plane<T> face_planes[4];
+    //bool boundary_face[4];
 
     bool valid;
 
     void create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3<T>>& points);
 
+    bool has_neighbor(int neighbor_idx) const {
+        for (int i = 0; i < 4; i++) {
+            if (neighbors[i] == neighbor_idx) {
+                return true;
+            }
+        }
+        return false;
+    }
     Vector3<T> calc_circumcenter(const std::vector<Vector3<T>>& points) const;
     bool point_in_circumsphere(const Vector3<T>& p, const std::vector<Vector3<T>>& points) const {
         return (circumcenter - p).magnitude_squared() < (circumcenter - points[v0_idx]).magnitude_squared();
@@ -376,7 +385,7 @@ class CyclopsTetrahedralizer {
 
 private:
 //    void create_tetrahedrons_internal(const std::vector<Vector3<T>>& points, BVHTree<T>& bvh_tree, float quality_threshold);
-    void create_tetrahedrons_iter(std::vector<Tetrahedron<T>>& tetrahedrons, const BVHTree<T>& bvh_tree, const std::vector<Vector3<T>>& points);
+    void create_tetrahedrons_iter(std::vector<Tetrahedron<T>>& tetrahedrons, const std::vector<Vector3<T>>& points);
 
 //    Vector3<T> calc_circum_center(Vector3<T> p0, Vector3<T> p1, Vector3<T> p2, Vector3<T> p3) const;
 

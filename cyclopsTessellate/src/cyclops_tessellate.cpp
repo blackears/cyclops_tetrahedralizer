@@ -58,12 +58,10 @@ void Tetrahedron<T>::create_from_points(int v0_idx, int v1_idx, int v2_idx, int 
     //Should all be facing outside
     for (int i = 0; i < 4; i++) {
         face_planes[i] = Plane<T>(points[face_vert_indices[i][0]], points[face_vert_indices[i][1]], points[face_vert_indices[i][2]]);
+        // boundary_face[i] = vert_indices[face_vert_indices[i][0]] < num_boundary_points &&
+        //                    vert_indices[face_vert_indices[i][1]] < num_boundary_points &&
+        //                    vert_indices[face_vert_indices[i][2]] < num_boundary_points;
     }
-
-    // face_planes[0] = Plane<T>(p2, p1, p0);
-    // face_planes[1] = Plane<T>(p0, p1, p3);
-    // face_planes[2] = Plane<T>(p1, p2, p3);
-    // face_planes[3] = Plane<T>(p2, p0, p3);
 
     valid = true;
 }
@@ -374,10 +372,22 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
     tetrahedrons.push_back(tetra);
 
     create_tetrahedrons_iter(tetrahedrons, bvh_tree, tess_points);
+
+    //Remove exterior tetrahedrons
+    for (int i = 0; i < tetrahedrons.size(); i++) {
+        Tetrahedron<T>& tet = tetrahedrons[i];
+        if (tet.valid) {
+            if (!bvh_tree.is_inside(tet.center, 1e-3))
+            {
+                tet.valid = false;
+            }
+        }
+    }
+
 }
 
 template<typename T>
-void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron<T>>& tetrahedrons, const BVHTree<T>& bvh_tree, const std::vector<Vector3<T>>& points) {
+void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron<T>>& tetrahedrons, const std::vector<Vector3<T>>& points) {
     for (int i = 0; i < points.size() - 4; i++) {
         Vector3<T> p = points[i];
 
@@ -498,13 +508,6 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron
 
             new_tet_indices.push_back(new_tet_idx);
         }
-
-
-        //Remove extroir tetrahedrons
-        std::vector<Tetrahedron<T>> outside_tetrahedrons;
-        
-
-
 
     }
 }
