@@ -9,7 +9,7 @@ Get [CMake](https://cmake.org/)
 From the download directory
 
 	cd <cyclops tessellator project directory>
-	cmake -B build -S ./cyclopsTetrahedralizer
+	cmake -B build -S .
 
 This will build a solution inside of the `./build` directory.  To create the executable, either open the `build/CyclopsTetrahedralizer.sln` in Visual Studio and select Build All.  Alternately, on the command line you can issue:
 
