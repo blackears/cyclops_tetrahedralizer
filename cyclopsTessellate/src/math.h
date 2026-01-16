@@ -26,7 +26,7 @@
 
 #include  <vector>
 
-namespace CyclopsTessellate3D {
+namespace CyclopsTetra3D {
 
 template<typename T = float>
 struct Vector3 {

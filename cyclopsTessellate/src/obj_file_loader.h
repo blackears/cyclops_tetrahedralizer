@@ -29,7 +29,7 @@
 
 #include "math.h"
 
-namespace CyclopsTessellate3D {
+namespace CyclopsTetra3D {
 
 template<typename T = float>
 std::vector<Vector3<T>> load_obj_file(const std::string& filename);

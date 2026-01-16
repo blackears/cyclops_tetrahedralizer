@@ -26,7 +26,7 @@
 #include <random>
 
 using namespace std;
-using namespace CyclopsTessellate3D;
+using namespace CyclopsTetra3D;
 
 template<typename T>
 void Tetrahedron<T>::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3<T>>& points) {

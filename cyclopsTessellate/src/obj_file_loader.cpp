@@ -24,7 +24,7 @@
 
 #include <stdexcept>
 
-using namespace CyclopsTessellate3D;
+using namespace CyclopsTetra3D;
 
 template<typename T = float>
 std::vector<Vector3<T>> load_obj_file(const std::string& filename) {

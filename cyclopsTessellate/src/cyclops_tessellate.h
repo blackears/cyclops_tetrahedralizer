@@ -21,14 +21,14 @@
  */
 
 
-#ifndef CYCLOPS_TESSELLATE_H
-#define CYCLOPS_TESSELLATE_H
+#ifndef CYCLOPS_TETRAHEDRALIZER_H
+#define CYCLOPS_TETRAHEDRALIZER_H
 
 #include  <vector>
 
 #include "math.h"
 
-namespace CyclopsTessellate3D {
+namespace CyclopsTetra3D {
 
 template<typename T = float>
 struct BVHTreeTriangle {
@@ -264,4 +264,4 @@ public:
 
 }
 
-#endif //CYCLOPS_TESSELLATE_H
+#endif //CYCLOPS_TETRAHEDRALIZER_H
