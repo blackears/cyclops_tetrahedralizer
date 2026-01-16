@@ -22,15 +22,70 @@
 
 
 #include <iostream>
-using namespace std;
+
+#include <map>
+#include <string>
 
 #include "cyclops_tetrahedralizer.h"
 #include "obj_file_loader.h"
 
+using namespace std;
+using namespace CyclopsTetra3D;
+
 #ifndef CYCLOPS_TESS_LIB
 
-int main()
+bool parse_command_line(int argc, char** argv, std::map<std::string, std::string>& out_options, std::string& out_source_file)
 {
+	bool specified_source_file = false;
+
+	for (int i = 1; i < argc; ++i)
+	{
+		std::string arg = argv[i];
+		if (arg[0] == '-')
+		{
+			std::string option_name = arg.substr(1);
+			std::string option_value;
+			if ((i + 1) < argc)
+			{
+				option_value = argv[i + 1];
+				++i;
+			}
+			out_options[option_name] = option_value;
+		}
+		else
+		{
+			out_source_file = arg;
+			specified_source_file = true;
+		}
+	}
+
+	if (!specified_source_file)
+	{
+		cout << "No source file specified." << endl;
+		return false;
+	}
+	return true;
+}
+
+int main(int argc, char **argv)
+{
+	std::map<std::string, std::string> options;
+	std::string source_file;
+
+	if (!parse_command_line(argc, argv, options, source_file))
+	{
+		return 1;
+	}
+
+	// Load the source file
+	ObjFileLoader<float> loader;
+	loader.load_obj_file(source_file);
+	// if (!loader.load_obj_file(source_file))
+	// {
+	// 	cout << "Failed to load source file: " << source_file << endl;
+	// 	return 1;
+	// }
+
 	cout << "Hello CMake3." << endl;
 	return 0;
 }

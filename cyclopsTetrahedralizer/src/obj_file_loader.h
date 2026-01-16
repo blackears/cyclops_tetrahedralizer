@@ -32,10 +32,20 @@
 namespace CyclopsTetra3D {
 
 template<typename T = float>
-std::vector<Vector3<T>> load_obj_file(const std::string& filename);
+class ObjFileLoader
+{
+    std::vector<Vector3<T>> points;
+    std::vector<std::vector<int>> face_indices;
 
-template<typename T = float>
-void save_obj_file(const std::string& filename, const std::vector<Vector3<float>>& points);
+public:
+    ObjFileLoader() = default;
+    ~ObjFileLoader() = default;
+
+    bool load_obj_file(const std::string& filename);
+
+    void save_obj_file(const std::string& filename, const std::vector<Vector3<float>>& points);
+};
+
 
 }
 
