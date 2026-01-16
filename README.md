@@ -29,15 +29,19 @@ Open CyclopsTetrahedralizer.sln project in Visual Studio and build all.
 make
 ```
 
-### References
+## References
 
-Tetrahedralizer plugin for Blender
+#### Tetrahedralizer plugin for Blender
+
 Matthias Muller
+
 (https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py)
 
-How to build a BVH
+
+#### How to build a BVH
 jbikker
+
 (https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
 
-Bounding Box Ray Intersection
+#### Bounding Box Ray Intersection
 (https://en.wikipedia.org/wiki/Slab_method)
