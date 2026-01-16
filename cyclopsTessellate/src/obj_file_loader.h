@@ -20,19 +20,23 @@
  * SOFTWARE.
  */
 
+ 
+#ifndef CYCLOPS_OBJ_FILE_LOADER_H
+#define CYCLOPS_OBJ_FILE_LOADER_H
 
-#include <iostream>
-using namespace std;
+#include <vector>
+#include <string>
 
-#include "cyclops_tessellate.h"
-#include "obj_file_loader.h"
+#include "math.h"
 
-#ifndef CYCLOPS_TESS_LIB
+namespace CyclopsTessellate3D {
 
-int main()
-{
-	cout << "Hello CMake3." << endl;
-	return 0;
+template<typename T = float>
+std::vector<Vector3<T>> load_obj_file(const std::string& filename);
+
+template<typename T = float>
+void save_obj_file(const std::string& filename, const std::vector<Vector3<float>>& points);
+
 }
 
-#endif
+#endif //CYCLOPS_OBJ_FILE_LOADER_H
