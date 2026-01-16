@@ -20,45 +20,19 @@
  * SOFTWARE.
  */
 
+
+#include <iostream>
+using namespace std;
+
+#include "cyclops_tetrahedralizer.h"
 #include "obj_file_loader.h"
 
-#include <stdexcept>
+#ifndef CYCLOPS_TESS_LIB
 
-using namespace CyclopsTetra3D;
-
-template<typename T = float>
-std::vector<Vector3<T>> load_obj_file(const std::string& filename) {
-    std::vector<Vector3<T>> points;
-
-    FILE* file = fopen(filename.c_str(), "r");
-    if (file == nullptr) {
-        throw std::runtime_error("Failed to open OBJ file: " + filename);
-    }
-
-    char line[256];
-    while (fgets(line, sizeof(line), file)) {
-        if (line[0] == 'v' && line[1] == ' ') {
-            float x, y, z;
-            if (sscanf(line + 2, "%f %f %f", &x, &y, &z) == 3) {
-                points.emplace_back(x, y, z);
-            }
-        }
-    }
-
-    fclose(file);
-    return points;
+int main()
+{
+	cout << "Hello CMake3." << endl;
+	return 0;
 }
 
-
-void save_obj_file(const std::string& filename, const std::vector<Vector3<float>>& points) {
-    FILE* file = fopen(filename.c_str(), "w");
-    if (file == nullptr) {
-        throw std::runtime_error("Failed to open OBJ file for writing: " + filename);
-    }
-
-    for (const auto& p : points) {
-        fprintf(file, "v %f %f %f\n", p.x, p.y, p.z);
-    }
-
-    fclose(file);
-}
+#endif

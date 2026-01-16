@@ -21,7 +21,7 @@
  */
 
 
-#include "cyclops_tessellate.h"
+#include "cyclops_tetrahedralizer.h"
 
 #include <random>
 
