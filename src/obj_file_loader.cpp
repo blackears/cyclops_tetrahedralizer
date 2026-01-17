@@ -26,8 +26,7 @@
 
 using namespace CyclopsTetra3D;
 
-template<typename T>
-bool ObjFileLoader<T>::load_obj_file(const std::string& filename) {
+bool ObjFileLoader::load_obj_file(const std::string& filename) {
     points.clear();
     face_indices.clear();
 
@@ -39,11 +38,12 @@ bool ObjFileLoader<T>::load_obj_file(const std::string& filename) {
     char line[256];
     while (fgets(line, sizeof(line), file)) {
         if (line[0] == 'v' && line[1] == ' ') {
-            T x, y, z;
+            real x, y, z;
             if (sscanf_s(line + 2, "%f %f %f", &x, &y, &z) == 3) {
                 points.emplace_back(x, y, z);
             }
         }
+
         if (line[0] == 'f' && line[1] == ' ') {
             std::vector<int> face_indices;
             char* ptr = line + 2;
@@ -58,9 +58,6 @@ bool ObjFileLoader<T>::load_obj_file(const std::string& filename) {
                 }
                 while (*ptr == ' ') ++ptr;
             }
-            if (!face_indices.empty()) {
-                face_indices.push_back(face_indices);
-            }
         }
     }
 
@@ -68,8 +65,7 @@ bool ObjFileLoader<T>::load_obj_file(const std::string& filename) {
 }
 
 
-template<typename T>
-void ObjFileLoader<T>::save_obj_file(const std::string& filename, const std::vector<Vector3<float>>& points) {
+void ObjFileLoader::save_obj_file(const std::string& filename, const std::vector<Vector3>& points) {
     FILE* file = nullptr;
     errno_t err = fopen_s(&file, filename.c_str(), "w");
     if (file == nullptr) {
@@ -78,6 +74,14 @@ void ObjFileLoader<T>::save_obj_file(const std::string& filename, const std::vec
 
     for (const auto& p : points) {
         fprintf(file, "v %f %f %f\n", p.x, p.y, p.z);
+    }
+
+    for (const auto& face : face_indices) {
+        fprintf(file, "f");
+        for (const auto& index : face) {
+            fprintf(file, " %d", index + 1); // OBJ indices are 1-based
+        }
+        fprintf(file, "\n");
     }
 
     fclose(file);

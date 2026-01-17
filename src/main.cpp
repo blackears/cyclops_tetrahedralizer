@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	}
 
 	// Load the source file
-	ObjFileLoader<float> loader;
+	ObjFileLoader loader;
 	loader.load_obj_file(source_file);
 	// if (!loader.load_obj_file(source_file))
 	// {

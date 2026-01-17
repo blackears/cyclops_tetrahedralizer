@@ -28,8 +28,7 @@
 using namespace std;
 using namespace CyclopsTetra3D;
 
-template<typename T>
-void Tetrahedron<T>::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3<T>>& points) {
+void Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points) {
     this->vert_indices[0] = v0_idx;
     this->vert_indices[1] = v1_idx;
     this->vert_indices[2] = v2_idx;
@@ -43,12 +42,12 @@ void Tetrahedron<T>::create_from_points(int v0_idx, int v1_idx, int v2_idx, int 
     this->circumcenter = calc_circumcenter(points);
     this->center = (points[v0_idx] + points[v1_idx] + points[v2_idx] + points[v3_idx]) / 4.0;
 
-    Vector3<T> p0 = points[v0_idx];
-    Vector3<T> p1 = points[v1_idx];
-    Vector3<T> p2 = points[v2_idx];
-    Vector3<T> p3 = points[v3_idx];
+    Vector3 p0 = points[v0_idx];
+    Vector3 p1 = points[v1_idx];
+    Vector3 p2 = points[v2_idx];
+    Vector3 p3 = points[v3_idx];
 
-    Plane<T> test_plane(p0, p1, p2);
+    Plane test_plane(p0, p1, p2);
     if (test_plane.distance_to_plane(p3) > 0.0) {
         //Swap two vertices to change winding
         this->vert_indices[0] = v1_idx;
@@ -57,7 +56,7 @@ void Tetrahedron<T>::create_from_points(int v0_idx, int v1_idx, int v2_idx, int 
 
     //Should all be facing outside
     for (int i = 0; i < 4; i++) {
-        face_planes[i] = Plane<T>(points[face_vert_indices[i][0]], points[face_vert_indices[i][1]], points[face_vert_indices[i][2]]);
+        face_planes[i] = Plane(points[face_vert_indices[i][0]], points[face_vert_indices[i][1]], points[face_vert_indices[i][2]]);
         // boundary_face[i] = vert_indices[face_vert_indices[i][0]] < num_boundary_points &&
         //                    vert_indices[face_vert_indices[i][1]] < num_boundary_points &&
         //                    vert_indices[face_vert_indices[i][2]] < num_boundary_points;
@@ -66,22 +65,21 @@ void Tetrahedron<T>::create_from_points(int v0_idx, int v1_idx, int v2_idx, int 
     valid = true;
 }
 
-template<typename T>
-Vector3<T> Tetrahedron<T>::calc_circumcenter(const std::vector<Vector3<T>>& points) const {
+Vector3 Tetrahedron::calc_circumcenter(const std::vector<Vector3>& points) const {
     //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
 
     //From Matthias Muller
     //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
-    Vector3<T> p0 = points[v0_idx];
-    Vector3<T> p1 = points[v1_idx];
-    Vector3<T> p2 = points[v2_idx];
-    Vector3<T> p3 = points[v3_idx];
+    Vector3 p0 = points[vert_indices[0]];
+    Vector3 p1 = points[vert_indices[1]];
+    Vector3 p2 = points[vert_indices[2]];
+    Vector3 p3 = points[vert_indices[3]];
 
-    Vector3<T> b = p1 - p0;
-    Vector3<T> c = p2 - p0;
-    Vector3<T> d = p3 - p0;
+    Vector3 b = p1 - p0;
+    Vector3 c = p2 - p0;
+    Vector3 d = p3 - p0;
  
-    T det = 2.0 * (b.x * (c.y * d.z - c.z * d.y) 
+    real det = 2.0 * (b.x * (c.y * d.z - c.z * d.y) 
         - b.y * (c.x * d.z - c.z * d.x) 
         + b.z * (c.x * d.y - c.y * d.x));
 
@@ -89,17 +87,16 @@ Vector3<T> Tetrahedron<T>::calc_circumcenter(const std::vector<Vector3<T>>& poin
         return p0;
     }
     else {
-        Vector3<T> v = c.cross(d) * b.dot(b) + d.cross(b) * c.dot(c) + b.cross(c) * d.dot(d);
+        Vector3 v = c.cross(d) * b.dot(b) + d.cross(b) * c.dot(c) + b.cross(c) * d.dot(d);
         v /= det;
         return p0 + v;
     }
 
 }
 
-template<typename T>
-bool Tetrahedron<T>::contains_point(const Vector3<T>& p, const std::vector<Vector3<T>>& points) const {
+bool Tetrahedron::contains_point(const Vector3& p, const std::vector<Vector3>& points) const {
     for (int i = 0; i < 4; i++) {
-        T dist = face_planes[i].distance_to_plane(p);
+        real dist = face_planes[i].distance_to_plane(p);
         if (dist <= 0.0) {
             return false;
         }
@@ -107,17 +104,16 @@ bool Tetrahedron<T>::contains_point(const Vector3<T>& p, const std::vector<Vecto
     return true;
 }
 
-template<typename T>
-int Tetrahedron<T>::find_adjacent_tetrahedron(const Vector3<T>& dir, const std::vector<Vector3<T>>& points) const {
+int Tetrahedron::find_adjacent_tetrahedron(const Vector3& dir, const std::vector<Vector3>& points) const {
     //constexpr int[][] tet_faces = {{2,1,0}, {0,1,3}, {1,2,3}, {2,0,3}};
 
-    T best_dist = std::numeric_limits<T>::infinity();
+    real best_dist = std::numeric_limits<real>::infinity();
     int best_face = -1;
     for (int i = 0; i < 4; i++) {
-        Vector3<T> p_intersect;
+        Vector3 p_intersect;
         if (face_planes[i].intersect_ray(center, dir, p_intersect)) {
-            Vector3<T> offset = p_intersect - center;
-            T dist = offset.dot(dir);
+            Vector3 offset = p_intersect - center;
+            real dist = offset.dot(dir);
             if (dist > 0.0 && dist < best_dist) {
                 best_dist = dist;
                 best_face = i;
@@ -129,39 +125,46 @@ int Tetrahedron<T>::find_adjacent_tetrahedron(const Vector3<T>& dir, const std::
 }
 
 //return value on [0 - 1] where 1 is a perfect tetrahedron
-template<typename T>
-T Tetrahedron<T>::quality(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, const Vector3<T>& p3) const {
-    Vector3<T> d0 = p1 - p0;
-    Vector3<T> d1 = p2 - p0;
-    Vector3<T> d2 = p3 - p0;
-    Vector3<T> d3 = p2 - p1;
-    Vector3<T> d4 = p3 - p2;
-    Vector3<T> d5 = p1 - p3;
+real Tetrahedron::quality(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3) const {
+    Vector3 d0 = p1 - p0;
+    Vector3 d1 = p2 - p0;
+    Vector3 d2 = p3 - p0;
+    Vector3 d3 = p2 - p1;
+    Vector3 d4 = p3 - p2;
+    Vector3 d5 = p1 - p3;
 
-    T s0 = d0.magnitude();
-    T s1 = d1.magnitude();
-    T s2 = d2.magnitude();
-    T s3 = d3.magnitude();
-    T s4 = d4.magnitude();
-    T s5 = d5.magnitude();
+    real s0 = d0.magnitude();
+    real s1 = d1.magnitude();
+    real s2 = d2.magnitude();
+    real s3 = d3.magnitude();
+    real s4 = d4.magnitude();
+    real s5 = d5.magnitude();
 
-    T ms = (s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4 + s5 * s5) / 6.0;
-    T rms = sqrt(ms);
+    real ms = (s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4 + s5 * s5) / 6.0;
+    real rms = sqrt(ms);
 
-    T s = 12.0 / sqrt(2.0);
+    real s = 12.0 / sqrt(2.0);
 
-    T vol = d0.dot(d1.cross(d2)) / 6.0;
+    real vol = d0.dot(d1.cross(d2)) / 6.0;
     return s * vol / (rms * rms * rms);
 }
 
+const Vector3 BVHTree::face_check_dirs[] = {
+    Vector3(1, 0, 0),
+    Vector3(-1, 0, 0),
+    Vector3(0, 1, 0),
+    Vector3(0, -1, 0),
+    Vector3(0, 0, 1),
+    Vector3(0, 0, -1)
+};
 
-template<typename T>
-void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
-    BVHTreeNode<T>& root_node = nodes[root_node_idx];
 
-    Vector3<T> bb_size = root_node.bounds.size();
+void BVHTree::build_nodes_recursive(int root_node_idx, int& nodes_used) {
+    BVHTreeNode& root_node = nodes[root_node_idx];
+
+    Vector3 bb_size = root_node.bounds.size();
     int axis;
-    T midpoint
+    real midpoint;
     if (bb_size.x >= bb_size.y && bb_size.x >= bb_size.z) {
         axis = 0;
         midpoint = bb_size.x / 2.0 + root_node.bounds.bb_min.x;
@@ -176,10 +179,10 @@ void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     }
 
     //Partition primitives around midpoint - sort subpartions
-    int i = root_node.first_primitive_offset;
+    int i = root_node.first_triangle_offset;
     int j = i + root_node.num_triangles - 1;
     while (i <= j) {
-        BVHTreeTriangle<T>& tri = triangles[i];
+        BVHTreeTriangle& tri = triangles[i];
         if (tri.centroid[axis] < midpoint) {
             i++;
         } else {
@@ -194,15 +197,15 @@ void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     }
 
     //Next two nodes in node list with be children of this node
-    nodes[nodes_used].first_primitive_offset = root_node.first_triangle_offset;
-    nodes[nodes_used].num_primitives = left_count;
+    nodes[nodes_used].first_triangle_offset = root_node.first_triangle_offset;
+    nodes[nodes_used].num_triangles = left_count;
     nodes[nodes_used].update_bounds(triangles, nodes);
 
-    nodes[nodes_used + 1].first_primitive_offset = i;
-    nodes[nodes_used + 1].num_primitives = root_node.num_triangles - left_count;
+    nodes[nodes_used + 1].first_triangle_offset = i;
+    nodes[nodes_used + 1].num_triangles = root_node.num_triangles - left_count;
     nodes[nodes_used + 1].update_bounds(triangles, nodes);
     
-    root_node.left_child_idx = nodes_used;
+    root_node.child_left_idx = nodes_used;
     root_node.num_triangles = 0;
     nodes_used += 2;
 
@@ -211,8 +214,7 @@ void BVHTree<T>::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     build_nodes_recursive(root_node.child_left_idx + 1, nodes_used);
 }
 
-template<typename T>
-void BVHTree<T>::build_from_triangles(const std::vector<Vector3<T>>& points, const std::vector<int>& indices) {
+void BVHTree::build_from_triangles(const std::vector<Vector3>& points, const std::vector<int>& indices) {
     nodes.clear();
     triangles.clear();
 
@@ -224,49 +226,39 @@ void BVHTree<T>::build_from_triangles(const std::vector<Vector3<T>>& points, con
         int idx1 = indices[i * 3 + 1];
         int idx2 = indices[i * 3 + 2];
 
-        Vector3<T> v0 = points[idx0];
-        Vector3<T> v1 = points[idx1];
-        Vector3<T> v2 = points[idx2];
+        Vector3 v0 = points[idx0];
+        Vector3 v1 = points[idx1];
+        Vector3 v2 = points[idx2];
 
-        BVHTreeTriangle<T> tri = BVHTreeTriangle<T>(v0, v1, v2);
+        BVHTreeTriangle tri = BVHTreeTriangle(v0, v1, v2);
         triangles.push_back(tri);
     }
 
-    nodes[0].left_child_idx = 0;
-    nodes[0].right_child_idx = 0;
-    nodes[0].first_primitive_offset = 0;
-    nodes[0].num_primitives = triangles.size();
-    nodes[0].update_bounds();
+    nodes[0].child_left_idx = 0;
+    //nodes[0].right_child_idx = 0;
+    nodes[0].first_triangle_offset = 0;
+    nodes[0].num_triangles = triangles.size();
+    nodes[0].update_bounds(triangles, nodes);
 
     int nodes_used = 1;
     build_nodes_recursive(0, nodes_used);
 }
 
-template<typename T>
-bool BVHTree<T>::is_inside(Vector3<T> p, T dist_min) const {
+bool BVHTree::is_inside(const Vector3& p, real dist_min) const {
     //Check multiple directions to minimize chance of hitting an edge
-    const Vector3[T] dirs = {
-        Vector3<T>(1,0,0),
-        Vector3<T>(-1,0,0),
-        Vector3<T>(0,1,0),
-        Vector3<T>(0,-1,0),
-        Vector3<T>(0,0,1),
-        Vector3<T>(0,0,-1)
-    };
 
     int num_inside = 0;
 
     for (int i = 0; i < 6; i++) {
-        Vector3<T> hit_pos;
-        Vector3<T> hit_normal;
+        Vector3 hit_pos;
+        Vector3 hit_normal;
         int hit_index;
 
-        nodes[0].ray_cast(p, dirs[i], 1e10, hit_pos, hit_normal, hit_index);
-        T hit_distance = (hit_pos - p).magnitude();
-        
+        nodes[0].ray_cast(p, face_check_dirs[i], triangles, nodes, hit_pos, hit_normal, hit_index);
+        real hit_distance = (hit_pos - p).magnitude();
         //Check hit is valid
         if (hit_index >= 0) {
-            if (hit_normal.dot(dirs[i]) > 0) {
+            if (hit_normal.dot(face_check_dirs[i]) > 0) {
                 num_inside++;
             }
 
@@ -280,45 +272,43 @@ bool BVHTree<T>::is_inside(Vector3<T> p, T dist_min) const {
     return num_inside >= 3;
 }
 
-template<typename T>
-bool BVHTree<T>::ray_cast(Vector3<T> ray_origin, Vector3<T> ray_direction, Vector3<T> &hit_pos, Vector3<T> &hit_normal, int &out_index) const {
-    return nodes[0].ray_cast(ray_origin, ray_direction, hit_pos, hit_normal, out_index);
+bool BVHTree::ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, Vector3 &hit_pos, Vector3 &hit_normal, int &out_index) const {
+    return nodes[0].ray_cast(ray_origin, ray_direction, triangles, nodes, hit_pos, hit_normal, out_index);
 }
 
 
-template<typename T>
-void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>>& points, 
+void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& points, 
     const std::vector<int>& indices, 
     float resolution,
     float quality_threshold) {
 
     //Create BVH from input triangles
-    BVHTree<T> bvh_tree;
+    BVHTree bvh_tree;
     bvh_tree.build_from_triangles(points, indices);
 
-    std::vector<Vector3<T>> tess_points;
+    std::vector<Vector3> tess_points;
     tess_points.reserve(points.size() + 4);
 
     //Add jitter to points to avoid degenerate cases
     std::random_device r;
     std::default_random_engine rng_eng(r());
-    std::uniform_real_distribution<T> rand_eps(-1e-5, 1e-5);
+    std::uniform_real_distribution<real> rand_eps(-1e-5, 1e-5);
 
-    for (const Vector3<T>& p : points) {
-        Vector3<T> jit_p = p + Vector3<T>(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
+    for (const Vector3& p : points) {
+        Vector3 jit_p = p + Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
         tess_points.push_back(jit_p);
     }
 
     //Find bounding box
-    Vector3<T> bb_min = tess_points[0];
-    Vector3<T> bb_max = tess_points[0];
+    Vector3 bb_min = tess_points[0];
+    Vector3 bb_max = tess_points[0];
     for (int i = 1; i < tess_points.size(); i++) {
-        bb_min = bb_min.min(p);
-        bb_max = bb_max.max(p);
+        bb_min = bb_min.min(tess_points[i]);
+        bb_max = bb_max.max(tess_points[i]);
     }
 
     //Add extra points for interior of mesh
-    Vector3<T> bb_size = bb_max - bb_min;
+    Vector3 bb_size = bb_max - bb_min;
     float max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
 
     if (resolution > 0) {
@@ -330,7 +320,7 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
                 float y = bb_min.y + yi * h + rand_eps(rng_eng);
                 for (int zi = 0; zi <= int(bb_size.z / h); zi++) {
                     float z = bb_min.z + zi * h + rand_eps(rng_eng);
-                    Vector3<T> p = Vector3<T>(x, y, z);
+                    Vector3 p = Vector3(x, y, z);
 
                     if (bvh_tree.is_inside(p)) {
                         tess_points.push_back(p);
@@ -341,12 +331,11 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
     }
 
     //Find bounding tetrahedron
-    Vector3<T> bb_center = (bb_min + bb_max) / 2.0;
-    Vector3<T> bb_size = bb_max - bb_min;
-    Vector3<T> btet_v0 = bb_min;
-    Vector3<T> btet_v1 = bb_min + Vector3<T>(bb_size.x * 3.0, 0, 0);
-    Vector3<T> btet_v2 = bb_min + Vector3<T>(0, bb_size.y * 3.0, 0);
-    Vector3<T> btet_v3 = bb_min + Vector3<T>(0, 0, bb_size.z * 3.0);
+    Vector3 bb_center = (bb_min + bb_max) / 2.0;
+    Vector3 btet_v0 = bb_min;
+    Vector3 btet_v1 = bb_min + Vector3(bb_size.x * 3.0, 0, 0);
+    Vector3 btet_v2 = bb_min + Vector3(0, bb_size.y * 3.0, 0);
+    Vector3 btet_v3 = bb_min + Vector3(0, 0, bb_size.z * 3.0);
     //Add margin
     btet_v0 += (btet_v0 - bb_center) * 0.1;
     btet_v1 += (btet_v1 - bb_center) * 0.1;
@@ -361,8 +350,8 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
     //Create tetrahedrons
     //create_tetrahedrons_internal(tess_points, bvh_tree, quality_threshold);
 
-    std::vector<Tetrahedron<T>> tetrahedrons;
-    Tetrahedron<T> tetra;
+    std::vector<Tetrahedron> tetrahedrons;
+    Tetrahedron tetra;
     tetra.create_from_points(
         int(tess_points.size() - 4),
         int(tess_points.size() - 3),
@@ -371,11 +360,11 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
         points);
     tetrahedrons.push_back(tetra);
 
-    create_tetrahedrons_iter(tetrahedrons, bvh_tree, tess_points);
+    create_tetrahedrons_iter(tetrahedrons, tess_points);
 
     //Remove exterior tetrahedrons
     for (int i = 0; i < tetrahedrons.size(); i++) {
-        Tetrahedron<T>& tet = tetrahedrons[i];
+        Tetrahedron& tet = tetrahedrons[i];
         if (tet.valid) {
             if (!bvh_tree.is_inside(tet.center, 1e-3))
             {
@@ -386,16 +375,15 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons(const std::vector<Vector3<T>
 
 }
 
-template<typename T>
-void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron<T>>& tetrahedrons, const std::vector<Vector3<T>>& points) {
+void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points) {
     for (int i = 0; i < points.size() - 4; i++) {
-        Vector3<T> p = points[i];
+        Vector3 p = points[i];
 
         int tet_idx = 0;
 
         //Walk toward containing tetrahedron
         while (tet_idx != -1) {
-            Tetrahedron<T>& tet = tetrahedrons[tet_idx];
+            Tetrahedron& tet = tetrahedrons[tet_idx];
             if (tet.contains_point(p, points)) {
                 break;
             }
@@ -411,7 +399,7 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron
         //Find tetrahedra with circumspheres containing point
 //        bad_tet_candidates.push_back(tet_idx);
 
-        Tetrahedron<T>& tet = tetrahedrons[tet_idx];
+        Tetrahedron& tet = tetrahedrons[tet_idx];
         tet.valid = false;
 
         std::vector<int> bad_tet_indices;
@@ -428,14 +416,14 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron
             auto [current_tet_idx, face_idx] = bad_tet_candidates.back();
             bad_tet_candidates.pop_back();
 
-            Tetrahedron<T>& current_tet = tetrahedrons[current_tet_idx];
+            Tetrahedron& current_tet = tetrahedrons[current_tet_idx];
 
             int neighbor_idx = current_tet.neighbors[face_idx];
             if (neighbor_idx == -1) {
                 outer_faces.push_back(std::make_tuple(current_tet_idx, face_idx));
             }
             else {
-                Tetrahedron<T>& neighbor_tet = tetrahedrons[neighbor_idx];
+                Tetrahedron& neighbor_tet = tetrahedrons[neighbor_idx];
                 if (!neighbor_tet.valid) {
                     continue;
                 }
@@ -457,18 +445,18 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron
         //Rebuild cavity with new tetrahedrons
         std::vector<int> new_tet_indices;
         for (auto [bad_tet_idx, face_idx] : outer_faces) {
-            Tetrahedron<T>& bad_tet = tetrahedrons[bad_tet_idx];
+            Tetrahedron& bad_tet = tetrahedrons[bad_tet_idx];
 
             int neighbor_tet_idx = bad_tet.neighbors[face_idx];
             //int v0_idx = 
 
             int vert_indices[4];
-            vert_indices[0] = bad_tet.vert_indices[Tetrahedron<T>::face_vert_indices[face_idx][0]];
-            vert_indices[1] = bad_tet.vert_indices[Tetrahedron<T>::face_vert_indices[face_idx][1]];
-            vert_indices[2] = bad_tet.vert_indices[Tetrahedron<T>::face_vert_indices[face_idx][2]];
+            vert_indices[0] = bad_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][0]];
+            vert_indices[1] = bad_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][1]];
+            vert_indices[2] = bad_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][2]];
             vert_indices[3] = i;
 
-            Tetrahedron<T> new_tet;
+            Tetrahedron new_tet;
             new_tet.create_from_points(
                 vert_indices[0],
                 vert_indices[1],
@@ -482,14 +470,14 @@ void CyclopsTetrahedralizer<T>::create_tetrahedrons_iter(std::vector<Tetrahedron
             new_tet.neighbors[0] = neighbor_tet_idx;
             //Find face with same vertices with reverse winding
             if (neighbor_tet_idx != -1) {
-                Tetrahedron<T>& neighbor_tet = tetrahedrons[neighbor_tet_idx];
+                Tetrahedron& neighbor_tet = tetrahedrons[neighbor_tet_idx];
                 neighbor_tet.neighbors[neighbor_tet.find_face(vert_indices[0], vert_indices[2], vert_indices[1])] = new_tet_idx;
             }
 
             //Check other cavity filling tetrahedrons for shared faces
             for (int j = 0; j < new_tet_indices.size(); j++) {
                 int other_tet_idx = new_tet_indices[j];
-                Tetrahedron<T>& other_tet = tetrahedrons[other_tet_idx];
+                Tetrahedron& other_tet = tetrahedrons[other_tet_idx];
 
                 //Check for shared face
                 int shared_count = 0;

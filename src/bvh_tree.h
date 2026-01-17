@@ -20,32 +20,5 @@
  * SOFTWARE.
  */
 
+ #include "math.h"
  
-#ifndef CYCLOPS_OBJ_FILE_LOADER_H
-#define CYCLOPS_OBJ_FILE_LOADER_H
-
-#include <vector>
-#include <string>
-
-#include "math.h"
-
-namespace CyclopsTetra3D {
-
-class ObjFileLoader
-{
-    std::vector<Vector3> points;
-    std::vector<std::vector<int>> face_indices;
-
-public:
-    ObjFileLoader() = default;
-    ~ObjFileLoader() = default;
-
-    bool load_obj_file(const std::string& filename);
-
-    void save_obj_file(const std::string& filename, const std::vector<Vector3>& points);
-};
-
-
-}
-
-#endif //CYCLOPS_OBJ_FILE_LOADER_H
