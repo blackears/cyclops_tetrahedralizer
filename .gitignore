@@ -1,3 +1,5 @@
 /build
 /cyclopsTessellate/BlenderTetPlugin.py
 /assets/*.blend1
+/out
+/.vs

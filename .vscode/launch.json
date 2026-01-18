@@ -13,6 +13,7 @@
                 "--output", "${workspaceFolder}/testing/cube_tetrahedra.obj",
                 "${workspaceFolder}/assets/cube.obj"
             ],
+            "symbolSearchPath": "${workspaceFolder}/build/Debug/",
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
