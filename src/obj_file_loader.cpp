@@ -24,47 +24,89 @@
 
 #include <stdexcept>
 #include <filesystem>
+#include <fstream>
+#include <regex>
 
 using namespace CyclopsTetra3D;
 
 bool ObjFileLoader::load_obj_file(const std::string& filename) {
     points.clear();
     face_indices.clear();
+    face_index_counts.clear();
 
-    //std::filesystem::path cp = std::filesystem::current_path();
+    std::ifstream file(filename);
+    const std::string whitespace = " \n\r\t\f\v";
 
-    FILE* file = nullptr;
-    errno_t err = fopen_s(&file, filename.c_str(), "r");
-    if (file == nullptr) {
-        throw std::runtime_error("Failed to open OBJ file: " + filename);
-    }
-    char line[256];
-    while (fgets(line, sizeof(line), file)) {
-        if (line[0] == 'v' && line[1] == ' ') {
-            real x, y, z;
-            if (sscanf_s(line + 2, "%f %f %f", &x, &y, &z) == 3) {
+    const std::regex command_regex(R"(^(\w+)\s*(.*)$)");
+    //const std::regex ws_regex("\\s+");
+    const std::regex verts_regex(R"(^\s*([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)(\s+([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?))(\s+([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?))\s*$)");
+
+    std::string line;
+    if (!file.is_open())
+        return false;
+
+    while (std::getline(file, line)) {
+        if (line.empty())
+            continue;
+
+        std::smatch match;
+        if (!std::regex_match(line, match, command_regex))
+            continue;
+
+        std::string command = match[1];
+        std::string args = match[2];
+
+        if (command == "v") {
+            std::smatch vert_match;
+            if (std::regex_match(args, vert_match, verts_regex)) {
+                real x = std::stof(vert_match[1]);
+                real y = std::stof(vert_match[4]);
+                real z = std::stof(vert_match[7]);
                 points.emplace_back(x, y, z);
             }
-        }
 
-        if (line[0] == 'f' && line[1] == ' ') {
-            std::vector<int> face_indices;
-            char* ptr = line + 2;
-            while (*ptr) {
-                int index;
-                if (sscanf_s(ptr, "%d", &index) == 1) {
-                    face_indices.push_back(index - 1); // OBJ indices are 1-based
-                    while (*ptr && *ptr != ' ') ++ptr;
-                }
-                else {
+        }
+        else if (command == "f") {
+            //std::vector<int> face_inds;
+            size_t pos = 0;
+            int vertex_count = 0;
+            while (pos < args.length()) {
+                // Skip leading whitespace
+                pos = args.find_first_not_of(whitespace, pos);
+                if (pos == std::string::npos)
                     break;
+
+                // Find the end of the current index
+                size_t end_pos = args.find_first_of(whitespace, pos);
+                std::string index_str = args.substr(pos, end_pos - pos);
+
+                // Extract the vertex index (before any slashes)
+                size_t slash_pos = index_str.find('/');
+                std::string vertex_index_str = (slash_pos == std::string::npos) ? index_str : index_str.substr(0, slash_pos);
+
+                try {
+                    int vertex_index = std::stoi(vertex_index_str);
+                    //face_inds.push_back(vertex_index - 1); // OBJ indices are 1-based
+                    face_indices.push_back(vertex_index);
                 }
-                while (*ptr == ' ') ++ptr;
+                catch (const std::invalid_argument&) {
+                    // Handle invalid index
+                    face_indices.push_back(0);
+                }
+
+                vertex_count++;
+
+                if (end_pos == std::string::npos)
+                    break;
+                pos = end_pos + 1;
+
             }
+            
+            face_index_counts.push_back(vertex_count);
         }
     }
-
-    fclose(file);
+    
+    return true;
 }
 
 
@@ -79,10 +121,11 @@ void ObjFileLoader::save_obj_file(const std::string& filename, const std::vector
         fprintf(file, "v %f %f %f\n", p.x, p.y, p.z);
     }
 
-    for (const auto& face : face_indices) {
+    int face_vertex_index = 0;
+    for (int index_count : face_index_counts) {
         fprintf(file, "f");
-        for (const auto& index : face) {
-            fprintf(file, " %d", index + 1); // OBJ indices are 1-based
+        for (int i = 0; i < index_count; ++i) {
+            fprintf(file, " %d", face_indices[face_vertex_index++]); // OBJ indices are 1-based
         }
         fprintf(file, "\n");
     }

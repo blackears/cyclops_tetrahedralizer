@@ -34,7 +34,8 @@ namespace CyclopsTetra3D {
 class ObjFileLoader
 {
     std::vector<Vector3> points;
-    std::vector<std::vector<int>> face_indices;
+    std::vector<int> face_indices;
+    std::vector<int> face_index_counts;
 
 public:
     ObjFileLoader() = default;
