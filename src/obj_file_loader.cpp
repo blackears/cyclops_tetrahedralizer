@@ -23,12 +23,15 @@
 #include "obj_file_loader.h"
 
 #include <stdexcept>
+#include <filesystem>
 
 using namespace CyclopsTetra3D;
 
 bool ObjFileLoader::load_obj_file(const std::string& filename) {
     points.clear();
     face_indices.clear();
+
+    //std::filesystem::path cp = std::filesystem::current_path();
 
     FILE* file = nullptr;
     errno_t err = fopen_s(&file, filename.c_str(), "r");
