@@ -24,7 +24,7 @@
 #include "cyclops_tetrahedralizer.h"
 
 #include <random>
-#include "bvh_tree.h"
+#include "bvh_tree3.h"
 
 using namespace CyclopsTetra3D;
 
@@ -149,15 +149,6 @@ real Tetrahedron::quality(const Vector3& p0, const Vector3& p1, const Vector3& p
     return s * vol / (rms * rms * rms);
 }
 
-const Vector3 BVHTree::face_check_dirs[] = {
-    Vector3(1, 0, 0),
-    Vector3(-1, 0, 0),
-    Vector3(0, 1, 0),
-    Vector3(0, -1, 0),
-    Vector3(0, 0, 1),
-    Vector3(0, 0, -1)
-};
-
 
 void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& points, 
     const std::vector<int>& indices, 
@@ -165,7 +156,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     float quality_threshold) {
 
     //Create BVH from input triangles
-    BVHTree bvh_tree;
+    BVHTree3 bvh_tree;
     bvh_tree.build_from_triangles(points, indices);
 
     std::vector<Vector3> tess_points;

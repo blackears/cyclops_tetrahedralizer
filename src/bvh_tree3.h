@@ -25,21 +25,21 @@
   * https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
   */
 
-#ifndef CYCLOPS_BVH_TREE_H
-#define CYCLOPS_BVH_TREE_H
+#ifndef CYCLOPS_BVH_TREE3_H
+#define CYCLOPS_BVH_TREE3_H
 
 #include "math.h"
 
 using namespace CyclopsTetra3D;
  
-struct BVHTreeTriangle {
+struct BVHTreeTriangle3 {
     Vector3 p0;
     Vector3 p1;
     Vector3 p2; 
     Vector3 centroid;
     BoundingBox bounds;
 
-    BVHTreeTriangle(const Vector3& p0, const Vector3& p1, const Vector3& p2)
+    BVHTreeTriangle3(const Vector3& p0, const Vector3& p1, const Vector3& p2)
         : p0(p0), p1(p1), p2(p2),
         bounds(BoundingBox(p0.min(p1).min(p2), p0.max(p1).max(p2))),
         centroid((p0 + p1 + p2) / 3.0) {}
@@ -76,7 +76,7 @@ struct BVHTreeTriangle {
     }
 };
 
-struct BVHTreeNode {
+struct BVHTreeNode3 {
     BoundingBox bounds;
 
     unsigned int child_left_idx;
@@ -89,7 +89,7 @@ struct BVHTreeNode {
         return num_triangles > 0;
     }
 
-    void update_bounds(const std::vector<BVHTreeTriangle>& triangles, const std::vector<BVHTreeNode>& nodes) {
+    void update_bounds(const std::vector<BVHTreeTriangle3>& triangles, const std::vector<BVHTreeNode3>& nodes) {
         if (num_triangles > 0) {
             bounds = triangles[first_triangle_offset].bounds;
             for (unsigned int i = 1; i < num_triangles; i++) {
@@ -101,7 +101,7 @@ struct BVHTreeNode {
     }
 
     bool ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, 
-        const std::vector<BVHTreeTriangle>& triangles, const std::vector<BVHTreeNode>& nodes,
+        const std::vector<BVHTreeTriangle3>& triangles, const std::vector<BVHTreeNode3>& nodes,
         Vector3 &out_hit_pos, Vector3 &out_hit_normal, int &out_index) const {
 
         if (!bounds.intersects_ray(ray_origin, ray_direction))
@@ -121,26 +121,11 @@ struct BVHTreeNode {
         }
     }
 
-    // bool intersects_ray(Vector3<T> ray_origin, Vector3<T> ray_direction, const std::vector<BVHTreeTriangle<T>>& primitives, const std::vector<BVHTreeNode<T>>& nodes) {
-    //     if (bounds.intersects_ray(ray_origin, ray_direction))
-    //         return true;
-    //     if (is_leaf()) {
-    //         for (unsigned int i = 0; i < num_triangles; i++) {
-    //             if (primitives[first_triangle_offset + i].bounds.intersects_ray(ray_origin, ray_direction))
-    //                 return true;
-    //         }
-    //         return false;
-    //     } else {
-    //         return nodes[child_left_idx].intersects_ray(ray_origin, ray_direction, primitives, nodes) ||
-    //             nodes[child_left_idx + 1].intersects_ray(ray_origin, ray_direction, primitives, nodes);
-    //     }
-    // }
-
 };
 
-class BVHTree {
-    std::vector<BVHTreeTriangle> triangles;
-    std::vector<BVHTreeNode> nodes;
+class BVHTree3 {
+    std::vector<BVHTreeTriangle3> triangles;
+    std::vector<BVHTreeNode3> nodes;
 
     void build_nodes_recursive(int root_node_idx, int& nodes_used);
 
@@ -157,4 +142,4 @@ public:
 
 };
 
-#endif //CYCLOPS_BVH_TREE_H
+#endif //CYCLOPS_BVH_TREE3_H

@@ -31,7 +31,7 @@ if(BUILD_LIBRARY)
 endif()
 
 if(BUILD_EXECUTABLE)
-  add_executable(cyclopsTetrahedralizer ${sources})
+  add_executable(cyclopsTetrahedralizer ${sources} "src/delunay_triangulation.h")
 endif()
 
 

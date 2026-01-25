@@ -85,6 +85,7 @@ int main(int argc, char **argv)
 		cout << "Failed to load source file: " << source_file << endl;
 		return 1;
 	}
+	loader.triangularize();
 
 	cout << "Hello CMake3." << endl;
 	return 0;
