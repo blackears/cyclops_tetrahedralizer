@@ -25,11 +25,13 @@
 #define DELUNAY_TRIANGULATION_H
 
 #include  <vector>
+#include "math.h"
 
 namespace CyclopsTetra3D {
 
 class DelunayTriangulator {
-
+public:
+    void create_triangles(const std::vector<Vector2>& points);
 };
 
 }

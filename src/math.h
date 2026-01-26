@@ -28,326 +28,344 @@
 
 namespace CyclopsTetra3D {
 
-typedef float real;
+    typedef float real;
 
 
-struct Vector2 {
-    real x;
-    real y;
+    struct Vector2 {
+        real x;
+        real y;
 
-    Vector2() : x(0), y(0) {}
-    Vector2(real x, real y) : x(x), y(y) {}
+        Vector2() : x(0), y(0) {}
+        Vector2(real x, real y) : x(x), y(y) {}
 
-    real magnitude_squared() const { return x * x + y * y; }
-    real magnitude() const { return sqrt(x * x + y * y); }
-    real dot(const Vector2 rhs) const { return x * rhs.x + y * rhs.y; }
-    Vector2 normalized() const {
-        real mag = magnitude();
-        if (mag == 0) return Vector2(0, 0);
-        return Vector2(x / mag, y / mag);
-    }
-
-    Vector2 min(const Vector2 rhs) const { return Vector2(std::min(x, rhs.x), std::min(y, rhs.y)); }
-    Vector2 max(const Vector2 rhs) const { return Vector2(std::max(x, rhs.x), std::max(y, rhs.y)); }
-
-    real operator[](int index) const {
-        if (index == 0) return x;
-        return y;
-    }
-
-    real& operator[](int index) {
-        if (index == 0) return x;
-        return y;
-    }
-
-    Vector2& operator+=(const Vector2& rhs) {
-        this->x += rhs.x;
-        this->y += rhs.y;
-        return *this;
-    }
-
-    friend Vector2 operator+(Vector2 lhs, const Vector2& rhs) {
-        lhs += rhs;
-        return lhs;
-    }
-
-    Vector2& operator-=(const Vector2& rhs) {
-        this->x -= rhs.x;
-        this->y -= rhs.y;
-        return *this;
-    }
-
-    friend Vector2 operator-(Vector2 lhs, const Vector2& rhs) {
-        lhs -= rhs;
-        return lhs;
-    }
-
-    Vector2& operator*=(real rhs) {
-        this->x *= rhs;
-        this->y *= rhs;
-        return *this;
-    }
-
-    friend Vector2 operator*(Vector2 lhs, real rhs) {
-        lhs *= rhs;
-        return lhs;
-    }
-
-    Vector2& operator/=(real rhs) {
-        this->x /= rhs;
-        this->y /= rhs;
-        return *this;
-    }
-
-    friend Vector2 operator/(Vector2 lhs, real rhs) {
-        lhs /= rhs;
-        return lhs;
-    }
-
-
-    Vector2& operator*=(Vector2 rhs) {
-        this->x *= rhs.x;
-        this->y *= rhs.y;
-        return *this;
-    }
-
-    friend Vector2 operator*(Vector2 lhs, Vector2 rhs) {
-        lhs *= rhs;
-        return lhs;
-    }
-
-    Vector2& operator/=(Vector2 rhs) {
-        this->x /= rhs.x;
-        this->y /= rhs.y;
-        return *this;
-    }
-
-    friend Vector2 operator/(Vector2 lhs, Vector2 rhs) {
-        lhs /= rhs;
-        return lhs;
-    }
-
-};
-
-struct Vector3 {
-    real x;
-    real y;
-    real z;
-
-    static const Vector3 X_POS;
-    static const Vector3 X_NEG;
-    static const Vector3 Y_POS;
-    static const Vector3 Y_NEG;
-    static const Vector3 Z_POS;
-    static const Vector3 Z_NEG;
-
-    Vector3() : x(0), y(0), z(0) {}
-    Vector3(real x, real y, real z) : x(x), y(y), z(z) {}
-
-    real magnitude_squared() const { return x * x + y * y + z * z; }
-    real magnitude() const { return sqrt(x * x + y * y + z * z); }
-    Vector3 cross(const Vector3 rhs) const { return Vector3(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x); }
-    real dot(const Vector3 rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
-    Vector3 normalized() const {
-        real mag = magnitude();
-        if (mag == 0) return Vector3(0, 0, 0);
-        return Vector3(x / mag, y / mag, z / mag);
-    }
-
-    Vector3 min(const Vector3 rhs) const { return Vector3(std::min(x, rhs.x), std::min(y, rhs.y), std::min(z, rhs.z)); }
-    Vector3 max(const Vector3 rhs) const { return Vector3(std::max(x, rhs.x), std::max(y, rhs.y), std::max(z, rhs.z)); }
-
-    real operator[](int index) const {
-        if (index == 0) return x;
-        else if (index == 1) return y;
-        else return z;
-    }
-
-    real& operator[](int index) {
-        if (index == 0) return x;
-        else if (index == 1) return y;
-        else return z;
-    }
-
-    Vector3& operator+=(const Vector3& rhs) {
-        this->x += rhs.x;
-        this->y += rhs.y;
-        this->z += rhs.z;
-        return *this;
-    }
-
-    friend Vector3 operator+(Vector3 lhs, const Vector3& rhs) {
-        lhs += rhs;
-        return lhs;
-    }
-
-    Vector3& operator-=(const Vector3& rhs) {
-        this->x -= rhs.x;
-        this->y -= rhs.y;
-        this->z -= rhs.z;
-        return *this;
-    }
-
-    friend Vector3 operator-(Vector3 lhs, const Vector3& rhs) {
-        lhs -= rhs;
-        return lhs;
-    }
-
-    Vector3& operator*=(real rhs) {
-        this->x *= rhs;
-        this->y *= rhs;
-        this->z *= rhs;
-        return *this;
-    }
-
-    friend Vector3 operator*(Vector3 lhs, real rhs) {
-        lhs *= rhs;
-        return lhs;
-    }
-
-    Vector3& operator/=(real rhs) {
-        this->x /= rhs;
-        this->y /= rhs;
-        this->z /= rhs;
-        return *this;
-    }
-
-    friend Vector3 operator/(Vector3 lhs, real rhs) {
-        lhs /= rhs;
-        return lhs;
-    }
-
-
-    Vector3& operator*=(Vector3 rhs) {
-        this->x *= rhs.x;
-        this->y *= rhs.y;
-        this->z *= rhs.z;
-        return *this;
-    }
-
-    friend Vector3 operator*(Vector3 lhs, Vector3 rhs) {
-        lhs *= rhs;
-        return lhs;
-    }
-
-    Vector3& operator/=(Vector3 rhs) {
-        this->x /= rhs.x;
-        this->y /= rhs.y;
-        this->z /= rhs.z;
-        return *this;
-    }
-
-    friend Vector3 operator/(Vector3 lhs, Vector3 rhs) {
-        lhs /= rhs;
-        return lhs;
-    }
-
-};
-
-
-struct Rectangle {
-    Vector2 bb_min;
-    Vector2 bb_max;
-
-    Rectangle() : bb_min(Vector2()), bb_max(Vector2()) {}
-    Rectangle(Vector2 bb_min, Vector2 bb_max) : bb_min(bb_min), bb_max(bb_max) {}
-
-    Rectangle merge(const Rectangle& other) const {
-        Vector2 new_bb_min = Vector2(std::min(bb_min.x, other.bb_min.x),
-            std::min(bb_min.y, other.bb_min.y));
-        Vector2 new_bb_max = Vector2(std::max(bb_max.x, other.bb_max.x),
-            std::max(bb_max.y, other.bb_max.y));
-        return Rectangle(new_bb_min, new_bb_max);
-    }
-
-    Vector2 center() const {
-        return (bb_min + bb_max) / 2.0;
-    }
-
-    Vector2 size() const {
-        return bb_max - bb_min;
-    }
-
-    bool intersects_ray(const Vector2& ray_origin, const Vector2& ray_direction) const {
-        //Slab method
-        //https://en.wikipedia.org/wiki/Slab_method
-        Vector2 t_low = (bb_min - ray_origin) / ray_direction;
-        Vector2 t_high = (bb_max - ray_origin) / ray_direction;
-        Vector2 t_close = t_low.min(t_high);
-        Vector2 t_far = t_low.max(t_high);
-
-        real t_close_max = std::max(t_close.x, t_close.y);
-        real t_far_min = std::min(t_far.x, t_far.y);
-        return t_close_max <= t_far_min;
-    }
-};
-
-struct BoundingBox {
-    Vector3 bb_min;
-    Vector3 bb_max;
-
-    BoundingBox() : bb_min(Vector3()), bb_max(Vector3()) {}
-    BoundingBox(Vector3 bb_min, Vector3 bb_max) : bb_min(bb_min), bb_max(bb_max) {}
-
-    BoundingBox merge(const BoundingBox& other) const {
-        Vector3 new_bb_min = Vector3(std::min(bb_min.x, other.bb_min.x),
-            std::min(bb_min.y, other.bb_min.y),
-            std::min(bb_min.z, other.bb_min.z));
-        Vector3 new_bb_max = Vector3(std::max(bb_max.x, other.bb_max.x),
-            std::max(bb_max.y, other.bb_max.y),
-            std::max(bb_max.z, other.bb_max.z));
-        return BoundingBox(new_bb_min, new_bb_max);
-    }
-
-    Vector3 center() const {
-        return (bb_min + bb_max) / 2.0;
-    }
-
-    Vector3 size() const {
-        return bb_max - bb_min;
-    }
-
-    bool intersects_ray(const Vector3& ray_origin, const Vector3& ray_direction) const {
-        //Slab method
-        //https://en.wikipedia.org/wiki/Slab_method
-        Vector3 t_low = (bb_min - ray_origin) / ray_direction;
-        Vector3 t_high = (bb_max - ray_origin) / ray_direction;
-        Vector3 t_close = t_low.min(t_high);
-        Vector3 t_far = t_low.max(t_high);
-
-        real t_close_max = std::max(std::max(t_close.x, t_close.y), t_close.z);
-        real t_far_min = std::min(std::min(t_far.x, t_far.y), t_far.z);
-        return t_close_max <= t_far_min;
-    }
-};
-
-
-struct Plane {
-    Vector3 normal;
-    //distance along normal from origin to plane
-    real dot_origin;
-
-    Plane() : normal(Vector3()), dot_origin(0) {}
-    Plane(const Vector3& normal, const Vector3& origin) : normal(normal), dot_origin(origin.dot(normal)) {}
-    Plane(const Vector3& p0, const Vector3& p1, const Vector3& p2) : normal((p1 - p0).cross(p2 - p0)), dot_origin(p0.dot(normal)) {}
-    
-    real distance_to_plane(const Vector3& p) const {
-        return normal.dot(p) - dot_origin;
-    }
-
-    bool intersect_ray(const Vector3& ray_origin, const Vector3& ray_direction, Vector3& out_intersection) const {
-        real denom = normal.dot(ray_direction);
-        if (denom == 0.0) {
-            return false;
+        real magnitude_squared() const { return x * x + y * y; }
+        real magnitude() const { return sqrt(x * x + y * y); }
+        real dot(const Vector2 rhs) const { return x * rhs.x + y * rhs.y; }
+        Vector2 normalized() const {
+            real mag = magnitude();
+            if (mag == 0) return Vector2(0, 0);
+            return Vector2(x / mag, y / mag);
         }
-        real numer = dot_origin - normal.dot(ray_origin);
 
-        real s = numer / denom;
-        out_intersection = ray_origin + ray_direction * s;
-        return true;
-    }
-};
+        Vector2 min(const Vector2 rhs) const { return Vector2(std::min(x, rhs.x), std::min(y, rhs.y)); }
+        Vector2 max(const Vector2 rhs) const { return Vector2(std::max(x, rhs.x), std::max(y, rhs.y)); }
 
+        real operator[](int index) const {
+            if (index == 0) return x;
+            return y;
+        }
+
+        real& operator[](int index) {
+            if (index == 0) return x;
+            return y;
+        }
+
+        Vector2& operator+=(const Vector2& rhs) {
+            this->x += rhs.x;
+            this->y += rhs.y;
+            return *this;
+        }
+
+        friend Vector2 operator+(Vector2 lhs, const Vector2& rhs) {
+            lhs += rhs;
+            return lhs;
+        }
+
+        Vector2& operator-=(const Vector2& rhs) {
+            this->x -= rhs.x;
+            this->y -= rhs.y;
+            return *this;
+        }
+
+        friend Vector2 operator-(Vector2 lhs, const Vector2& rhs) {
+            lhs -= rhs;
+            return lhs;
+        }
+
+        Vector2& operator*=(real rhs) {
+            this->x *= rhs;
+            this->y *= rhs;
+            return *this;
+        }
+
+        friend Vector2 operator*(Vector2 lhs, real rhs) {
+            lhs *= rhs;
+            return lhs;
+        }
+
+        Vector2& operator/=(real rhs) {
+            this->x /= rhs;
+            this->y /= rhs;
+            return *this;
+        }
+
+        friend Vector2 operator/(Vector2 lhs, real rhs) {
+            lhs /= rhs;
+            return lhs;
+        }
+
+
+        Vector2& operator*=(Vector2 rhs) {
+            this->x *= rhs.x;
+            this->y *= rhs.y;
+            return *this;
+        }
+
+        friend Vector2 operator*(Vector2 lhs, Vector2 rhs) {
+            lhs *= rhs;
+            return lhs;
+        }
+
+        Vector2& operator/=(Vector2 rhs) {
+            this->x /= rhs.x;
+            this->y /= rhs.y;
+            return *this;
+        }
+
+        friend Vector2 operator/(Vector2 lhs, Vector2 rhs) {
+            lhs /= rhs;
+            return lhs;
+        }
+
+    };
+
+    struct Vector3 {
+        real x;
+        real y;
+        real z;
+
+        static const Vector3 X_POS;
+        static const Vector3 X_NEG;
+        static const Vector3 Y_POS;
+        static const Vector3 Y_NEG;
+        static const Vector3 Z_POS;
+        static const Vector3 Z_NEG;
+
+        Vector3() : x(0), y(0), z(0) {}
+        Vector3(real x, real y, real z) : x(x), y(y), z(z) {}
+
+        real magnitude_squared() const { return x * x + y * y + z * z; }
+        real magnitude() const { return sqrt(x * x + y * y + z * z); }
+        Vector3 cross(const Vector3 rhs) const { return Vector3(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x); }
+        real dot(const Vector3 rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
+        Vector3 normalized() const {
+            real mag = magnitude();
+            if (mag == 0) return Vector3(0, 0, 0);
+            return Vector3(x / mag, y / mag, z / mag);
+        }
+
+        Vector3 min(const Vector3 rhs) const { return Vector3(std::min(x, rhs.x), std::min(y, rhs.y), std::min(z, rhs.z)); }
+        Vector3 max(const Vector3 rhs) const { return Vector3(std::max(x, rhs.x), std::max(y, rhs.y), std::max(z, rhs.z)); }
+
+        int max_axis() const {
+            if (abs(x) > abs(y) && abs(x) > abs(z))
+                return 0;
+            if (abs(y) > abs(z))
+                return 1;
+            return 2;
+        }
+
+        int min_axis() const {
+            if (abs(x) < abs(y) && abs(x) < abs(z))
+                return 0;
+            if (abs(y) < abs(z))
+                return 1;
+            return 2;
+        }
+
+        real operator[](int index) const {
+            if (index == 0) return x;
+            else if (index == 1) return y;
+            else return z;
+        }
+
+        real& operator[](int index) {
+            if (index == 0) return x;
+            else if (index == 1) return y;
+            else return z;
+        }
+
+        Vector3& operator+=(const Vector3& rhs) {
+            this->x += rhs.x;
+            this->y += rhs.y;
+            this->z += rhs.z;
+            return *this;
+        }
+
+        friend Vector3 operator+(Vector3 lhs, const Vector3& rhs) {
+            lhs += rhs;
+            return lhs;
+        }
+
+        Vector3& operator-=(const Vector3& rhs) {
+            this->x -= rhs.x;
+            this->y -= rhs.y;
+            this->z -= rhs.z;
+            return *this;
+        }
+
+        friend Vector3 operator-(Vector3 lhs, const Vector3& rhs) {
+            lhs -= rhs;
+            return lhs;
+        }
+
+        Vector3& operator*=(real rhs) {
+            this->x *= rhs;
+            this->y *= rhs;
+            this->z *= rhs;
+            return *this;
+        }
+
+        friend Vector3 operator*(Vector3 lhs, real rhs) {
+            lhs *= rhs;
+            return lhs;
+        }
+
+        Vector3& operator/=(real rhs) {
+            this->x /= rhs;
+            this->y /= rhs;
+            this->z /= rhs;
+            return *this;
+        }
+
+        friend Vector3 operator/(Vector3 lhs, real rhs) {
+            lhs /= rhs;
+            return lhs;
+        }
+
+
+        Vector3& operator*=(Vector3 rhs) {
+            this->x *= rhs.x;
+            this->y *= rhs.y;
+            this->z *= rhs.z;
+            return *this;
+        }
+
+        friend Vector3 operator*(Vector3 lhs, Vector3 rhs) {
+            lhs *= rhs;
+            return lhs;
+        }
+
+        Vector3& operator/=(Vector3 rhs) {
+            this->x /= rhs.x;
+            this->y /= rhs.y;
+            this->z /= rhs.z;
+            return *this;
+        }
+
+        friend Vector3 operator/(Vector3 lhs, Vector3 rhs) {
+            lhs /= rhs;
+            return lhs;
+        }
+
+    };
+
+
+    struct Rectangle {
+        Vector2 bb_min;
+        Vector2 bb_max;
+
+        Rectangle() : bb_min(Vector2()), bb_max(Vector2()) {}
+        Rectangle(Vector2 bb_min, Vector2 bb_max) : bb_min(bb_min), bb_max(bb_max) {}
+
+        Rectangle merge(const Rectangle& other) const {
+            Vector2 new_bb_min = Vector2(std::min(bb_min.x, other.bb_min.x),
+                std::min(bb_min.y, other.bb_min.y));
+            Vector2 new_bb_max = Vector2(std::max(bb_max.x, other.bb_max.x),
+                std::max(bb_max.y, other.bb_max.y));
+            return Rectangle(new_bb_min, new_bb_max);
+        }
+
+        Vector2 center() const {
+            return (bb_min + bb_max) / 2.0;
+        }
+
+        Vector2 size() const {
+            return bb_max - bb_min;
+        }
+
+        bool intersects_ray(const Vector2& ray_origin, const Vector2& ray_direction) const {
+            //Slab method
+            //https://en.wikipedia.org/wiki/Slab_method
+            Vector2 t_low = (bb_min - ray_origin) / ray_direction;
+            Vector2 t_high = (bb_max - ray_origin) / ray_direction;
+            Vector2 t_close = t_low.min(t_high);
+            Vector2 t_far = t_low.max(t_high);
+
+            real t_close_max = std::max(t_close.x, t_close.y);
+            real t_far_min = std::min(t_far.x, t_far.y);
+            return t_close_max <= t_far_min;
+        }
+    };
+
+    struct BoundingBox {
+        Vector3 bb_min;
+        Vector3 bb_max;
+
+        BoundingBox() : bb_min(Vector3()), bb_max(Vector3()) {}
+        BoundingBox(Vector3 bb_min, Vector3 bb_max) : bb_min(bb_min), bb_max(bb_max) {}
+
+        BoundingBox merge(const BoundingBox& other) const {
+            Vector3 new_bb_min = Vector3(std::min(bb_min.x, other.bb_min.x),
+                std::min(bb_min.y, other.bb_min.y),
+                std::min(bb_min.z, other.bb_min.z));
+            Vector3 new_bb_max = Vector3(std::max(bb_max.x, other.bb_max.x),
+                std::max(bb_max.y, other.bb_max.y),
+                std::max(bb_max.z, other.bb_max.z));
+            return BoundingBox(new_bb_min, new_bb_max);
+        }
+
+        Vector3 center() const {
+            return (bb_min + bb_max) / 2.0;
+        }
+
+        Vector3 size() const {
+            return bb_max - bb_min;
+        }
+
+        bool intersects_ray(const Vector3& ray_origin, const Vector3& ray_direction) const {
+            //Slab method
+            //https://en.wikipedia.org/wiki/Slab_method
+            Vector3 t_low = (bb_min - ray_origin) / ray_direction;
+            Vector3 t_high = (bb_max - ray_origin) / ray_direction;
+            Vector3 t_close = t_low.min(t_high);
+            Vector3 t_far = t_low.max(t_high);
+
+            real t_close_max = std::max(std::max(t_close.x, t_close.y), t_close.z);
+            real t_far_min = std::min(std::min(t_far.x, t_far.y), t_far.z);
+            return t_close_max <= t_far_min;
+        }
+    };
+
+
+    struct Plane {
+        Vector3 normal;
+        //distance along normal from origin to plane
+        real dot_origin;
+
+        Plane() : normal(Vector3()), dot_origin(0) {}
+        Plane(const Vector3& normal, const Vector3& origin) : normal(normal), dot_origin(origin.dot(normal)) {}
+        Plane(const Vector3& p0, const Vector3& p1, const Vector3& p2) : normal((p1 - p0).cross(p2 - p0)), dot_origin(p0.dot(normal)) {}
+
+        real distance_to_plane(const Vector3& p) const {
+            return normal.dot(p) - dot_origin;
+        }
+
+        bool intersect_ray(const Vector3& ray_origin, const Vector3& ray_direction, Vector3& out_intersection) const {
+            real denom = normal.dot(ray_direction);
+            if (denom == 0.0) {
+                return false;
+            }
+            real numer = dot_origin - normal.dot(ray_origin);
+
+            real s = numer / denom;
+            out_intersection = ray_origin + ray_direction * s;
+            return true;
+        }
+    };
+
+    //Vector3 tetrahedron_circumcenter(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3);
+    
 }
 
 #endif //CYCLOPS_MATH_H

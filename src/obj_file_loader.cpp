@@ -27,6 +27,8 @@
 #include <fstream>
 #include <regex>
 
+#include "delunay_triangulation.h"
+
 using namespace CyclopsTetra3D;
 
 bool ObjFileLoader::load_obj_file(const std::string& filename) {
@@ -133,66 +135,11 @@ void ObjFileLoader::save_obj_file(const std::string& filename, const std::vector
     fclose(file);
 }
 
-//void ObjFileLoader::triangularize_face(int face_index_start, int face_vert_count, std::vector<int>& tri_face_indices) {
-//    int best_index = 0;
-//    real best_radius = INFINITY;
-//
-//    for (int i = 0; i < face_vert_count; ++i) {
-//
-//    }
-//
-//    //if (face_vert_count == 3) {
-//    //    tri_face_indices.push_back(face_vertex_indices[face_index_start]);
-//    //    tri_face_indices.push_back(face_vertex_indices[face_index_start + 1]);
-//    //    tri_face_indices.push_back(face_vertex_indices[face_index_start + 2]);
-//    //}
-//    //else if (face_vert_count == 4) {
-//    //    int fvi0 = face_vertex_indices[face_index_start];
-//    //    int fvi1 = face_vertex_indices[face_index_start + 1];
-//    //    int fvi2 = face_vertex_indices[face_index_start + 2];
-//    //    int fvi3 = face_vertex_indices[face_index_start + 3];
-//    //    
-//    //    Vector3 p0 = points[fvi0];
-//    //    Vector3 p1 = points[fvi1];
-//    //    Vector3 p2 = points[fvi2];
-//    //    Vector3 p3 = points[fvi3];
-//
-//    //    Vector3 center_012 = (p0 + p1 + p2) / 3.0;
-//    //    Vector3 center_023 = (p0 + p2 + p3) / 3.0;
-//    //    Vector3 center_013 = (p0 + p1 + p3) / 3.0;
-//    //    Vector3 center_312 = (p1 + p2 + p3) / 3.0;
-//    //    
-//    //    real split_02 = std::min(
-//    //        std::min((p0 - center_023).magnitude_squared(), 
-//    //        (p2 - center_023).magnitude_squared(),
-//    //        (p3 - center_023).magnitude_squared()),
-//
-//    //        std::min((p0 - center_012).magnitude_squared(),
-//    //        (p1 - center_012).magnitude_squared(),
-//    //        (p2 - center_012).magnitude_squared())
-//    //    );
-//    //    real split_13 = std::min(
-//    //        std::min((p0 - center_013).magnitude_squared(),
-//    //            (p1 - center_013).magnitude_squared(),
-//    //            (p3 - center_013).magnitude_squared()),
-//
-//    //        std::min((p3 - center_312).magnitude_squared(),
-//    //            (p1 - center_312).magnitude_squared(),
-//    //            (p2 - center_312).magnitude_squared())
-//    //    );
-//    //    
-//    //    if (split_02 > split_13) {
-//
-//    //    }
-//    //}
-//}
 
 void ObjFileLoader::triangularize() {
     std::vector<int> new_face_vertex_indices;
     std::vector<int> new_face_vertex_counts;
 
-
-    int face_ptr = 0;
 
     int face_vtx_cursor = 0;
     for (int face_size : face_vertex_counts) {
@@ -203,38 +150,66 @@ void ObjFileLoader::triangularize() {
             new_face_vertex_counts.push_back(3);
             face_vtx_cursor += 3;
         }
-        else if (face_size > 3) {
-            Vector3 center;
-            for (int i = 0; i < face_size; ++i) {
-                center += points[face_vertex_indices[face_vtx_cursor + i]];
-            }
-            center /= face_size;
-
+        else if (face_size == 4) {
             Vector3 p0 = points[face_vertex_indices[face_vtx_cursor]];
             Vector3 p1 = points[face_vertex_indices[face_vtx_cursor + 1]];
-            Vector3 normal = (p0 - center).cross(p1 - center).normalized();
-
-            Plane proj_plane(normal, center);
-            Vector3 tangent_0 = normal.cross(Vector3::Y_POS);
-            Vector3 tangent_1 = normal.cross(Vector3::X_POS);
-            Vector3 tangent = tangent_0.magnitude_squared() > tangent_1.magnitude_squared() ? tangent_0.normalized() : tangent_1.normalized();
+            Vector3 p2 = points[face_vertex_indices[face_vtx_cursor + 2]];
+            Vector3 p3 = points[face_vertex_indices[face_vtx_cursor + 3]];
             
+            //Split along shortest cross distance
+            if ((p2 - p0).magnitude_squared() < (p3 - p1).magnitude_squared()) {
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 1]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 2]);
+
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 2]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 3]);
+            }
+            else {
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 1]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 3]);
+
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 1]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 2]);
+                new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 3]);
+            }
+            new_face_vertex_counts.push_back(3);
+            new_face_vertex_counts.push_back(3);
+
+            face_vtx_cursor += 4;
+        }
+        else {
+            //Project face points onto 2d plane of face
+            Vector3 normal = calc_face_normal(face_vtx_cursor, face_size);
+            Vector3 p0 = points[face_vertex_indices[face_vtx_cursor]];
+
+            //Plane proj_plane(normal, p0);
+
+            Vector3 tangent;
+            tangent[normal.min_axis()] = 1;
+
             Vector3 binormal = tangent.cross(normal);
+            tangent = binormal.cross(normal);
 
             std::vector<Vector2> face_points;
             face_points.reserve(face_size);
 
             for (int i = 0; i < face_size; ++i) {
-                Vector3 p = points[face_vertex_indices[face_vtx_cursor + i]];
+                Vector3 p = points[face_vertex_indices[face_vtx_cursor + i]] - p0;
                 Vector2 p_proj = Vector2(tangent.dot(p), binormal.dot(p));
                 face_points.push_back(p_proj);
             }
 
             //std::vector<int> tess_indices = delunay_tessellation(face_points);
+            //Triangulate faces
+            DelunayTriangulator triangulator;
+            triangulator.create_triangles(face_points);
 
 
+            face_vtx_cursor += face_size;
         }
-        face_ptr += face_size;
     }
 
     // int face_vtx_cursor = 0;

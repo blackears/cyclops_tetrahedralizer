@@ -1,0 +1,13 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "cyclopsTetrahedralizer.exe",
+      "name": "cyclopsTetrahedralizer.exe",
+      "args": [ "../../../assets/cube.obj" ]
+    }
+  ]
+}

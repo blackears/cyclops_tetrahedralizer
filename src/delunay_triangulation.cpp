@@ -24,3 +24,7 @@
 
 using namespace CyclopsTetra3D;
 
+void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points) {
+    int g;
+
+}

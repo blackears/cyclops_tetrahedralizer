@@ -66,10 +66,13 @@ void Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_
 }
 
 Vector3 Tetrahedron::calc_circumcenter(const std::vector<Vector3>& points) const {
+    //return tetrahedron_circumcenter(points[vert_indices[0]], points[vert_indices[1]], points[vert_indices[2]], points[vert_indices[3]]);
+
     //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
 
     //From Matthias Muller
     //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
+     
     Vector3 p0 = points[vert_indices[0]];
     Vector3 p1 = points[vert_indices[1]];
     Vector3 p2 = points[vert_indices[2]];
