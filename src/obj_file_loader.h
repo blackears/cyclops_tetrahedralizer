@@ -41,17 +41,17 @@ class ObjFileLoader
     Vector3 calc_face_normal(int face_index_start, int face_vert_count) {
         switch (face_vert_count) {
         case 4: {
-            Vector3 p0 = points[face_index_start];
-            Vector3 p1 = points[face_index_start + 1];
-            Vector3 p2 = points[face_index_start + 2];
-            Vector3 p3 = points[face_index_start + 3];
+            Vector3 p0 = points[face_vertex_indices[face_index_start]];
+            Vector3 p1 = points[face_vertex_indices[face_index_start + 1]];
+            Vector3 p2 = points[face_vertex_indices[face_index_start + 2]];
+            Vector3 p3 = points[face_vertex_indices[face_index_start + 3]];
 
             return (p2 - p0).cross(p3 - p1).normalized();
         }
         case 3: {
-            Vector3 p0 = points[face_index_start];
-            Vector3 p1 = points[face_index_start + 1];
-            Vector3 p2 = points[face_index_start + 2];
+            Vector3 p0 = points[face_vertex_indices[face_index_start]];
+            Vector3 p1 = points[face_vertex_indices[face_index_start + 1]];
+            Vector3 p2 = points[face_vertex_indices[face_index_start + 2]];
 
             return (p1 - p0).cross(p2 - p1).normalized();
         }
@@ -62,10 +62,10 @@ class ObjFileLoader
             //n.x is area of polygon projected onto YZ plane, etc.
             Vector3 normal_sum;
             for (int i = 0; i < face_vert_count; ++i) {
-                int j = i <= face_vert_count - 1 ? i + 1 : i - face_vert_count + 1;
-                Vector3 p0 = points[face_index_start + i];
-                Vector3 p1 = points[face_index_start + j];
-                
+                int j = (i < face_vert_count - 1) ? i + 1 : i - face_vert_count + 1;
+                Vector3 p0 = points[face_vertex_indices[face_index_start + i]];
+                Vector3 p1 = points[face_vertex_indices[face_index_start + j]];
+
                 normal_sum.x += (p1.z + p0.z) * (p0.y - p1.y);
                 normal_sum.y += (p1.x + p0.x) * (p0.z - p1.z);
                 normal_sum.z += (p1.y + p0.y) * (p0.x - p1.x);
