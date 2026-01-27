@@ -29,18 +29,19 @@
 using namespace CyclopsTetra3D;
 
 void Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points) {
-    this->vert_indices[0] = v0_idx;
-    this->vert_indices[1] = v1_idx;
-    this->vert_indices[2] = v2_idx;
-    this->vert_indices[3] = v3_idx;
+    vert_indices[0] = v0_idx;
+    vert_indices[1] = v1_idx;
+    vert_indices[2] = v2_idx;
+    vert_indices[3] = v3_idx;
 
-    this->neighbors[0] = -1;
-    this->neighbors[1] = -1;
-    this->neighbors[2] = -1;
-    this->neighbors[3] = -1;
+    neighbors[0] = -1;
+    neighbors[1] = -1;
+    neighbors[2] = -1;
+    neighbors[3] = -1;
 
-    this->circumcenter = calc_circumcenter(points);
-    this->center = (points[v0_idx] + points[v1_idx] + points[v2_idx] + points[v3_idx]) / 4.0;
+    circumcenter = Math::tetrahedron_circumcenter(points[v0_idx], points[v1_idx], points[v2_idx], points[v3_idx]);
+    circumcircle_radius_squared = (circumcenter - points[v0_idx]).magnitude_squared();
+    center = (points[v0_idx] + points[v1_idx] + points[v2_idx] + points[v3_idx]) / 4.0;
 
     Vector3 p0 = points[v0_idx];
     Vector3 p1 = points[v1_idx];
@@ -50,8 +51,8 @@ void Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_
     Plane test_plane(p0, p1, p2);
     if (test_plane.distance_to_plane(p3) > 0.0) {
         //Swap two vertices to change winding
-        this->vert_indices[0] = v1_idx;
-        this->vert_indices[1] = v0_idx;
+        vert_indices[0] = v1_idx;
+        vert_indices[1] = v0_idx;
     }
 
     //Should all be facing outside
@@ -65,37 +66,37 @@ void Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_
     valid = true;
 }
 
-Vector3 Tetrahedron::calc_circumcenter(const std::vector<Vector3>& points) const {
-    //return tetrahedron_circumcenter(points[vert_indices[0]], points[vert_indices[1]], points[vert_indices[2]], points[vert_indices[3]]);
-
-    //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
-
-    //From Matthias Muller
-    //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
-     
-    Vector3 p0 = points[vert_indices[0]];
-    Vector3 p1 = points[vert_indices[1]];
-    Vector3 p2 = points[vert_indices[2]];
-    Vector3 p3 = points[vert_indices[3]];
-
-    Vector3 b = p1 - p0;
-    Vector3 c = p2 - p0;
-    Vector3 d = p3 - p0;
- 
-    real det = 2.0 * (b.x * (c.y * d.z - c.z * d.y) 
-        - b.y * (c.x * d.z - c.z * d.x) 
-        + b.z * (c.x * d.y - c.y * d.x));
-
-    if (det == 0.0) {
-        return p0;
-    }
-    else {
-        Vector3 v = c.cross(d) * b.dot(b) + d.cross(b) * c.dot(c) + b.cross(c) * d.dot(d);
-        v /= det;
-        return p0 + v;
-    }
-
-}
+//Vector3 Tetrahedron::calc_circumcenter(const std::vector<Vector3>& points) const {
+//    //return tetrahedron_circumcenter(points[vert_indices[0]], points[vert_indices[1]], points[vert_indices[2]], points[vert_indices[3]]);
+//
+//    //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
+//
+//    //From Matthias Muller
+//    //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
+//     
+//    Vector3 p0 = points[vert_indices[0]];
+//    Vector3 p1 = points[vert_indices[1]];
+//    Vector3 p2 = points[vert_indices[2]];
+//    Vector3 p3 = points[vert_indices[3]];
+//
+//    Vector3 b = p1 - p0;
+//    Vector3 c = p2 - p0;
+//    Vector3 d = p3 - p0;
+// 
+//    real det = 2.0 * (b.x * (c.y * d.z - c.z * d.y) 
+//        - b.y * (c.x * d.z - c.z * d.x) 
+//        + b.z * (c.x * d.y - c.y * d.x));
+//
+//    if (det == 0.0) {
+//        return p0;
+//    }
+//    else {
+//        Vector3 v = c.cross(d) * b.dot(b) + d.cross(b) * c.dot(c) + b.cross(c) * d.dot(d);
+//        v /= det;
+//        return p0 + v;
+//    }
+//
+//}
 
 bool Tetrahedron::contains_point(const Vector3& p, const std::vector<Vector3>& points) const {
     for (int i = 0; i < 4; i++) {
@@ -155,8 +156,7 @@ real Tetrahedron::quality(const Vector3& p0, const Vector3& p1, const Vector3& p
 
 void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& points, 
     const std::vector<int>& indices, 
-    float resolution,
-    float quality_threshold) {
+    float resolution) {
 
     //Create BVH from input triangles
     BVHTree3 bvh_tree;
@@ -256,6 +256,14 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
         Vector3 p = points[i];
 
         int tet_idx = 0;
+
+        while (tet_idx != -1) {
+            Tetrahedron& tri = tetrahedrons[tet_idx];
+            if (tri.valid)
+                break;
+
+            tet_idx++;
+        }
 
         //Walk toward containing tetrahedron
         while (tet_idx != -1) {

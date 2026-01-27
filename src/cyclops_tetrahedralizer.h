@@ -42,10 +42,10 @@ struct Tetrahedron {
     int neighbors[4];
 
     Vector3 circumcenter;
+    real circumcircle_radius_squared;
     Vector3 center;
 
     Plane face_planes[4];
-    //bool boundary_face[4];
 
     bool valid;
 
@@ -59,9 +59,32 @@ struct Tetrahedron {
         }
         return false;
     }
-    Vector3 calc_circumcenter(const std::vector<Vector3>& points) const;
+    
+    //static Vector3 calc_circumcenter(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3) {
+    //    //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
+    //    
+    //    //From Matthias Muller
+    //    //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
+    //    Vector3 b = p1 - p0;
+    //    Vector3 c = p2 - p0;
+    //    Vector3 d = p3 - p0;
+
+    //    real det = 2.0 * (b.x * (c.y * d.z - c.z * d.y)
+    //        - b.y * (c.x * d.z - c.z * d.x)
+    //        + b.z * (c.x * d.y - c.y * d.x));
+
+    //    if (det == 0.0) {
+    //        return p0;
+    //    }
+    //    else {
+    //        Vector3 v = c.cross(d) * b.dot(b) + d.cross(b) * c.dot(c) + b.cross(c) * d.dot(d);
+    //        v /= det;
+    //        return p0 + v;
+    //    }
+    //}
+
     bool point_in_circumsphere(const Vector3& p, const std::vector<Vector3>& points) const {
-        return (circumcenter - p).magnitude_squared() < (circumcenter - points[vert_indices[0]]).magnitude_squared();
+        return (circumcenter - p).magnitude_squared() < circumcircle_radius_squared;
     }
     bool contains_point(const Vector3& p, const std::vector<Vector3>& points) const;
     int find_adjacent_tetrahedron(const Vector3& dir, const std::vector<Vector3>& points) const;
@@ -83,7 +106,6 @@ struct Tetrahedron {
             }
         }
         return -1;
-
     }
 };
 
@@ -91,20 +113,13 @@ class CyclopsTetrahedralizer {
     Vector3* point_list;
 
 private:
-//    void create_tetrahedrons_internal(const std::vector<Vector3>& points, BVHTree& bvh_tree, float quality_threshold);
     void create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points);
-
-//    Vector3 calc_circum_center(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3) const;
 
 public:
     //@param points of triangles
     //@param indices of triangles (3 per triangle)
     //@param resolution spacing for extra interior points
-    //@param quality_threshold minimum quality for tetrahedrons.  0.0 to 1.0, with 1.0 being equilateral tetrahedra.
-    void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float resolution = .1, float quality_threshold = 0.001);
-
-
-    //void tessellate_tetrahedra(float* mesh_points);
+    void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float resolution = .1);
 
 };
 

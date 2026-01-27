@@ -140,7 +140,6 @@ void ObjFileLoader::triangularize() {
     std::vector<int> new_face_vertex_indices;
     std::vector<int> new_face_vertex_counts;
 
-
     int face_vtx_cursor = 0;
     for (int face_size : face_vertex_counts) {
         if (face_size == 3) {
@@ -202,37 +201,30 @@ void ObjFileLoader::triangularize() {
                 face_points.push_back(p_proj);
             }
 
-            //std::vector<int> tess_indices = delunay_tessellation(face_points);
+            std::vector<int> face_point_indices;
+            face_point_indices.reserve(face_size * 2);
+            for (int i = 0; i < face_size; ++i) {
+                face_point_indices.push_back(i);
+                face_point_indices.push_back(Math::wrap(i + 1, 0, face_size));
+            }
+
             //Triangulate faces
             DelunayTriangulator triangulator;
-            triangulator.create_triangles(face_points);
+            triangulator.create_triangles(face_points, face_point_indices);
 
+            for (const DelunayTriangle& tri : triangulator.get_triangles()) {
+                if (tri.valid) {
+                    new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[0]]);
+                    new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[1]]);
+                    new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[2]]);
+
+                    new_face_vertex_counts.push_back(3);
+                }
+            }
 
             face_vtx_cursor += face_size;
         }
     }
-
-    // int face_vtx_cursor = 0;
-    // for (int face_idx = 0; face_idx < face_vertex_counts.size(); ++face_idx) {
-
-    //     int vert_count = face_vertex_counts[face_idx];
-    //     for (int vert_idx = 2; vert_idx < vert_count; ++vert_idx) {
-    //         if ((vert_idx & 0x1) == 0) {
-    //             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor]);
-    //             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 1]);
-    //             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 2]);
-    //             new_face_vertex_counts.push_back(3);
-    //         }
-    //         else {
-    //             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor]);
-    //             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 2]);
-    //             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 1]);
-    //             new_face_vertex_counts.push_back(3);
-    //         }
-    //         face_vtx_cursor += 1;
-    //     }
-    // }
-
     
     face_vertex_indices = std::move(new_face_vertex_indices);
     face_vertex_counts = std::move(new_face_vertex_counts);
