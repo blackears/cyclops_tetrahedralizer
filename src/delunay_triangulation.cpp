@@ -27,10 +27,10 @@
 
 using namespace CyclopsTetra3D;
 
-void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices) {
+void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution) {
     //Create BVH from input triangles
     BVHTree2 bvh_tree;
-    bvh_tree.build_from_triangles(points, indices);
+    bvh_tree.build_from_edges(points, indices);
 
     std::vector<Vector2> tess_points;
     tess_points.reserve(points.size() + 4);
@@ -55,6 +55,23 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
 
     Vector2 bb_size = bb_max - bb_min;
 
+    if (resolution > 0) {
+        float max_dim = std::max(bb_size.x, bb_size.y);
+        int h = max_dim / resolution;
+
+        for (int xi = 0; xi <= int(bb_size.x / h); xi++) {
+            float x = bb_min.x + xi * h + rand_eps(rng_eng);
+            for (int yi = 0; yi <= int(bb_size.y / h); yi++) {
+                float y = bb_min.y + yi * h + rand_eps(rng_eng);
+                Vector2 p = Vector2(x, y);
+
+                if (bvh_tree.is_inside(p)) {
+                    tess_points.push_back(p);
+                }
+            }
+        }
+    }
+
     //Find bounding triangle
     Vector2 bb_center = (bb_min + bb_max) / 2.0;
     Vector2 btet_v0 = bb_min;
@@ -74,7 +91,7 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
         int(tess_points.size() - 3),
         int(tess_points.size() - 2),
         int(tess_points.size() - 1),
-        points);
+        tess_points);
     triangles.push_back(tri);
 
     create_triangles_iter(tess_points);

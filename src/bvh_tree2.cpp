@@ -50,35 +50,35 @@ void BVHTree2::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     }
 
     //Partition primitives around midpoint - sort subpartions
-    int i = root_node.first_triangle_offset;
-    int j = i + root_node.num_triangles - 1;
+    int i = root_node.first_edge_offset;
+    int j = i + root_node.num_edges - 1;
     while (i <= j) {
-        BVHTreeTriangle2& tri = triangles[i];
+        BVHTreeEdge2& tri = edges[i];
         if (tri.centroid[axis] < midpoint) {
             i++;
         }
         else {
-            std::swap(triangles[i], triangles[j]);
+            std::swap(edges[i], edges[j]);
             j--;
         }
     }
 
-    int left_count = i - root_node.first_triangle_offset;
-    if (left_count == 0 || left_count == root_node.num_triangles) {
+    int left_count = i - root_node.first_edge_offset;
+    if (left_count == 0 || left_count == root_node.num_edges) {
         return; //Cannot split further
     }
 
     //Next two nodes in node list with be children of this node
-    nodes[nodes_used].first_triangle_offset = root_node.first_triangle_offset;
-    nodes[nodes_used].num_triangles = left_count;
-    nodes[nodes_used].update_bounds(triangles, nodes);
+    nodes[nodes_used].first_edge_offset = root_node.first_edge_offset;
+    nodes[nodes_used].num_edges = left_count;
+    nodes[nodes_used].update_bounds(edges, nodes);
 
-    nodes[nodes_used + 1].first_triangle_offset = i;
-    nodes[nodes_used + 1].num_triangles = root_node.num_triangles - left_count;
-    nodes[nodes_used + 1].update_bounds(triangles, nodes);
+    nodes[nodes_used + 1].first_edge_offset = i;
+    nodes[nodes_used + 1].num_edges = root_node.num_edges - left_count;
+    nodes[nodes_used + 1].update_bounds(edges, nodes);
 
     root_node.child_left_idx = nodes_used;
-    root_node.num_triangles = 0;
+    root_node.num_edges = 0;
     nodes_used += 2;
 
     //Recurse
@@ -86,31 +86,28 @@ void BVHTree2::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     build_nodes_recursive(root_node.child_left_idx + 1, nodes_used);
 }
 
-void BVHTree2::build_from_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices) {
+void BVHTree2::build_from_edges(const std::vector<Vector2>& points, const std::vector<int>& indices) {
     nodes.clear();
-    triangles.clear();
+    edges.clear();
 
-    nodes.resize(indices.size() / 3 * 2 - 1);
-    triangles.reserve(indices.size() / 3);
+    nodes.resize(indices.size() - 1);
+    edges.reserve(indices.size() / 2);
 
-    for (int i = 0; i < indices.size() / 3; i++) {
-        int idx0 = indices[i * 3 + 0];
-        int idx1 = indices[i * 3 + 1];
-        int idx2 = indices[i * 3 + 2];
+    for (int i = 0; i < indices.size() / 2; i++) {
+        int idx0 = indices[i * 2 + 0];
+        int idx1 = indices[i * 2 + 1];
 
         Vector2 v0 = points[idx0];
         Vector2 v1 = points[idx1];
-        Vector2 v2 = points[idx2];
 
-        BVHTreeTriangle2 tri = BVHTreeTriangle2(v0, v1, v2);
-        triangles.push_back(tri);
+        edges.push_back(BVHTreeEdge2(v0, v1));
     }
 
     nodes[0].child_left_idx = 0;
     //nodes[0].right_child_idx = 0;
-    nodes[0].first_triangle_offset = 0;
-    nodes[0].num_triangles = triangles.size();
-    nodes[0].update_bounds(triangles, nodes);
+    nodes[0].first_edge_offset = 0;
+    nodes[0].num_edges = edges.size();
+    nodes[0].update_bounds(edges, nodes);
 
     int nodes_used = 1;
     build_nodes_recursive(0, nodes_used);
@@ -126,7 +123,7 @@ bool BVHTree2::is_inside(const Vector2& p, real dist_min) const {
         Vector2 hit_normal;
         int hit_index;
 
-        nodes[0].ray_cast(p, face_check_dirs[i], triangles, nodes, hit_pos, hit_normal, hit_index);
+        nodes[0].ray_cast(p, face_check_dirs[i], edges, nodes, hit_pos, hit_normal, hit_index);
         real hit_distance = (hit_pos - p).magnitude();
         //Check hit is valid
         if (hit_index >= 0) {
@@ -145,6 +142,6 @@ bool BVHTree2::is_inside(const Vector2& p, real dist_min) const {
 }
 
 bool BVHTree2::ray_cast(const Vector2& ray_origin, const Vector2& ray_direction, Vector2& hit_pos, Vector2& hit_normal, int& out_index) const {
-    return nodes[0].ray_cast(ray_origin, ray_direction, triangles, nodes, hit_pos, hit_normal, out_index);
+    return nodes[0].ray_cast(ray_origin, ray_direction, edges, nodes, hit_pos, hit_normal, out_index);
 }
 

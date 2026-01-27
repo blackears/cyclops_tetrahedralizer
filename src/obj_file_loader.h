@@ -20,6 +20,9 @@
  * SOFTWARE.
  */
 
+/*
+ * In .obj files, clockwise winding triangles point outward.
+ */
  
 #ifndef CYCLOPS_OBJ_FILE_LOADER_H
 #define CYCLOPS_OBJ_FILE_LOADER_H
@@ -37,7 +40,7 @@ class ObjFileLoader
     std::vector<int> face_vertex_indices;
     std::vector<int> face_vertex_counts;
 
-//    void triangularize_face(int face_index_start, int face_vert_count);
+    //Normal points in direction of CCW winding.
     Vector3 calc_face_normal(int face_index_start, int face_vert_count) {
         switch (face_vert_count) {
         case 4: {
@@ -66,9 +69,9 @@ class ObjFileLoader
                 Vector3 p0 = points[face_vertex_indices[face_index_start + i]];
                 Vector3 p1 = points[face_vertex_indices[face_index_start + j]];
 
-                normal_sum.x += (p1.z + p0.z) * (p0.y - p1.y);
-                normal_sum.y += (p1.x + p0.x) * (p0.z - p1.z);
-                normal_sum.z += (p1.y + p0.y) * (p0.x - p1.x);
+                normal_sum.x += (p1.z + p0.z) * (p1.y - p0.y);
+                normal_sum.y += (p1.x + p0.x) * (p1.z - p0.z);
+                normal_sum.z += (p1.y + p0.y) * (p1.x - p0.x);
             }
             return normal_sum.normalized();
         }

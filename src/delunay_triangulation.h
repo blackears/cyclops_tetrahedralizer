@@ -114,7 +114,7 @@ private:
     void create_triangles_iter(const std::vector<Vector2>& points);
 
 public:
-    void create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices);
+    void create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution = 0);
 
     const std::vector<DelunayTriangle>& get_triangles() const { return triangles; }
 };

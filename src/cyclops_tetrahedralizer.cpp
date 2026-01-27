@@ -185,9 +185,9 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
     //Add extra points for interior of mesh
     Vector3 bb_size = bb_max - bb_min;
-    float max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
 
     if (resolution > 0) {
+        float max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
         int h = max_dim / resolution;
 
         for (int xi = 0; xi <= int(bb_size.x / h); xi++) {
@@ -233,7 +233,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
         int(tess_points.size() - 3),
         int(tess_points.size() - 2),
         int(tess_points.size() - 1),
-        points);
+        tess_points);
     tetrahedrons.push_back(tetra);
 
     create_tetrahedrons_iter(tetrahedrons, tess_points);

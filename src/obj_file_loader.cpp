@@ -190,7 +190,7 @@ void ObjFileLoader::triangularize() {
             tangent[normal.min_axis()] = 1;
 
             Vector3 binormal = tangent.cross(normal);
-            tangent = binormal.cross(normal);
+            tangent = normal.cross(binormal);
 
             std::vector<Vector2> face_points;
             face_points.reserve(face_size);

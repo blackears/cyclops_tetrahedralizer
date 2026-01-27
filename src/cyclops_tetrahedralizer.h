@@ -119,7 +119,7 @@ public:
     //@param points of triangles
     //@param indices of triangles (3 per triangle)
     //@param resolution spacing for extra interior points
-    void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float resolution = .1);
+    void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float resolution = 0);
 
 };
 
