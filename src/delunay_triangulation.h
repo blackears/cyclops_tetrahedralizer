@@ -24,7 +24,8 @@
 #ifndef DELUNAY_TRIANGULATION_H
 #define DELUNAY_TRIANGULATION_H
 
-#include  <vector>
+#include <vector>
+#include <string>
 #include "math.h"
 
 namespace CyclopsTetra3D {
@@ -120,6 +121,8 @@ public:
     void create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution = 0);
 
     const std::vector<DelunayTriangle>& get_triangles() const { return triangles; }
+
+    std::string plot_svg(const std::vector<Vector2>& points) const;
 };
 
 }

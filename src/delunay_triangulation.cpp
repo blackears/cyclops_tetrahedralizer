@@ -23,6 +23,7 @@
 #include "delunay_triangulation.h"
 
 #include <random>
+#include <iostream>
 #include "bvh_tree2.h"
 
 using namespace CyclopsTetra3D;
@@ -93,6 +94,8 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
         tess_points));
 
     create_triangles_iter(tess_points);
+
+    std::cout << plot_svg(tess_points) << std::endl;
 
     //Remove exterior triangles
     for (int i = 0; i < triangles.size(); i++) {
@@ -230,6 +233,20 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
 
             new_tri_indices.push_back(new_tri_idx);
         }
-
     }
+}
+
+std::string DelunayTriangulator::plot_svg(const std::vector<Vector2>& points) const {
+    std::string result = "<svg><g>";
+    for (const DelunayTriangle& tri : triangles) {
+        if (!tri.valid)
+            continue;
+
+        result += "<path d=\"M" + std::to_string(points[tri.vert_indices[0]].x) + " " + std::to_string(points[tri.vert_indices[0]].y)
+            + " L" + std::to_string(points[tri.vert_indices[1]].x) + " " + std::to_string(points[tri.vert_indices[1]].y)
+            + " L" + std::to_string(points[tri.vert_indices[2]].x) + " " + std::to_string(points[tri.vert_indices[2]].y)
+            + "\"/>";
+    }
+    result += "</g></svg>";
+    return result;
 }
