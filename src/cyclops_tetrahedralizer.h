@@ -49,7 +49,7 @@ struct Tetrahedron {
 
     bool valid;
 
-    void create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points);
+    static Tetrahedron create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points);
 
     bool has_neighbor(int neighbor_idx) const {
         for (int i = 0; i < 4; i++) {
@@ -111,6 +111,7 @@ struct Tetrahedron {
 
 class CyclopsTetrahedralizer {
     Vector3* point_list;
+    std::vector<Tetrahedron> tetrahedrons;
 
 private:
     void create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points);

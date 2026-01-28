@@ -74,25 +74,23 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
 
     //Find bounding triangle
     Vector2 bb_center = (bb_min + bb_max) / 2.0;
-    Vector2 btet_v0 = bb_min;
-    Vector2 btet_v1 = bb_min + Vector2(bb_size.x * 3.0, 0);
-    Vector2 btet_v2 = bb_min + Vector2(0, bb_size.y * 3.0);
+    Vector2 btri_v0 = bb_min;
+    Vector2 btri_v1 = bb_min + Vector2(bb_size.x * 3.0, 0);
+    Vector2 btri_v2 = bb_min + Vector2(0, bb_size.y * 3.0);
     //Add margin
-    btet_v0 += (btet_v0 - bb_center) * 0.1;
-    btet_v1 += (btet_v1 - bb_center) * 0.1;
-    btet_v2 += (btet_v2 - bb_center) * 0.1;
+    btri_v0 += (btri_v0 - bb_center) * 0.1;
+    btri_v1 += (btri_v1 - bb_center) * 0.1;
+    btri_v2 += (btri_v2 - bb_center) * 0.1;
 
-    tess_points.push_back(btet_v0);
-    tess_points.push_back(btet_v1);
-    tess_points.push_back(btet_v2);
+    tess_points.push_back(btri_v0);
+    tess_points.push_back(btri_v1);
+    tess_points.push_back(btri_v2);
 
-    DelunayTriangle tri;
-    tri.create_from_points(
+    triangles.push_back(DelunayTriangle::create_from_points(
         int(tess_points.size() - 3),
         int(tess_points.size() - 2),
         int(tess_points.size() - 1),
-        tess_points);
-    triangles.push_back(tri);
+        tess_points));
 
     create_triangles_iter(tess_points);
 
@@ -155,9 +153,9 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
             auto [current_tri_idx, edge_idx] = bad_tri_candidates.back();
             bad_tri_candidates.pop_back();
 
-            DelunayTriangle& current_tet = triangles[current_tri_idx];
+            DelunayTriangle& current_tri = triangles[current_tri_idx];
 
-            int neighbor_idx = current_tet.neighbors[edge_idx];
+            int neighbor_idx = current_tri.neighbors[edge_idx];
             if (neighbor_idx == -1) {
                 outer_edges.push_back(std::make_tuple(current_tri_idx, edge_idx));
             }
@@ -183,8 +181,8 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
 
         //Rebuild cavity with new triangles
         std::vector<int> new_tri_indices;
-        for (auto [bad_tet_idx, edge_idx] : outer_edges) {
-            DelunayTriangle& bad_tri = triangles[bad_tet_idx];
+        for (auto [bad_tri_idx, edge_idx] : outer_edges) {
+            DelunayTriangle& bad_tri = triangles[bad_tri_idx];
 
             int neighbor_tri_idx = bad_tri.neighbors[edge_idx];
 
@@ -194,25 +192,23 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
             vert_indices[2] = i;
 
             int new_tri_idx = triangles.size();
-            DelunayTriangle new_tri_create;
-            new_tri_create.create_from_points(
+            triangles.push_back(DelunayTriangle::create_from_points(
                 vert_indices[0],
                 vert_indices[1],
                 vert_indices[2],
-                points);
-            triangles.push_back(new_tri_create);
+                points));
 
             DelunayTriangle& new_tri = triangles[new_tri_idx];
 
-            //Update neighbor links to exterior tetrahedrons
+            //Update neighbor links to exterior triangles
             new_tri.neighbors[0] = neighbor_tri_idx;
             //Find face with same vertices with reverse winding
             if (neighbor_tri_idx != -1) {
                 DelunayTriangle& neighbor_tri = triangles[neighbor_tri_idx];
-                neighbor_tri.neighbors[neighbor_tri.find_edge(vert_indices[0], vert_indices[1])] = new_tri_idx;
+                neighbor_tri.neighbors[neighbor_tri.find_edge(vert_indices[1], vert_indices[0])] = new_tri_idx;
             }
 
-            //Check other cavity filling tetrahedrons for shared faces
+            //Check other cavity filling triangles for shared faces
             for (int j = 0; j < new_tri_indices.size(); j++) {
                 int other_tri_idx = new_tri_indices[j];
                 DelunayTriangle& other_tri = triangles[other_tri_idx];

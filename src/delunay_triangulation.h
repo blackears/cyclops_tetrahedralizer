@@ -35,27 +35,30 @@ struct DelunayTriangle {
 
     int vert_indices[3];
     int neighbors[3];
+    bool valid;
 
     Vector2 circumcenter;
     real circumcircle_radius_squared;
     Vector2 center;
 
-    bool valid;
+    static DelunayTriangle create_from_points(int v0_idx, int v1_idx, int v2_idx, const std::vector<Vector2>& points) {
+        DelunayTriangle tri;
 
-    void create_from_points(int v0_idx, int v1_idx, int v2_idx, const std::vector<Vector2>& points) {
-        vert_indices[0] = v0_idx;
-        vert_indices[1] = v1_idx;
-        vert_indices[2] = v2_idx;
+        tri.vert_indices[0] = v0_idx;
+        tri.vert_indices[1] = v1_idx;
+        tri.vert_indices[2] = v2_idx;
 
-        neighbors[0] = -1;
-        neighbors[1] = -1;
-        neighbors[2] = -1;
+        tri.neighbors[0] = -1;
+        tri.neighbors[1] = -1;
+        tri.neighbors[2] = -1;
 
-        circumcenter = Math::triangle_circumcenter(points[v0_idx], points[v1_idx], points[v2_idx]);
-        circumcircle_radius_squared = (circumcenter - points[vert_indices[0]]).magnitude_squared();
-        center = (points[v0_idx] + points[v1_idx] + points[v2_idx]) / 3.0;
+        tri.circumcenter = Math::triangle_circumcenter(points[v0_idx], points[v1_idx], points[v2_idx]);
+        tri.circumcircle_radius_squared = (tri.circumcenter - points[tri.vert_indices[0]]).magnitude_squared();
+        tri.center = (points[v0_idx] + points[v1_idx] + points[v2_idx]) / 3.0;
 
-        valid = true;
+        tri.valid = true;
+
+        return tri;
     }
 
     bool has_neighbor(int neighbor_idx) const {
@@ -78,18 +81,18 @@ struct DelunayTriangle {
         Vector2 p1 = points[vert_indices[1]];
         Vector2 p2 = points[vert_indices[2]];
 
-        Vector2 hit_0 = Math::intersect_lines(center, dir, p0, p1 - p0);
-        Vector2 hit_1 = Math::intersect_lines(center, dir, p0, p2 - p0);
-        Vector2 hit_2 = Math::intersect_lines(center, dir, p1, p2 - p1);
+        Vector2 hit_0 = Math::intersect_lines(center, dir, p0, p1 - p0); //[0 1] edge
+        Vector2 hit_1 = Math::intersect_lines(center, dir, p1, p2 - p1); //[1 2] edge
+        Vector2 hit_2 = Math::intersect_lines(center, dir, p2, p0 - p2); //[2 0] edge
 
-        real dot_0 = hit_0.dot(dir);
-        real dot_1 = hit_1.dot(dir);
-        real dot_2 = hit_2.dot(dir);
+        real dot_0 = (hit_0 - center).dot(dir);
+        real dot_1 = (hit_1 - center).dot(dir);
+        real dot_2 = (hit_2 - center).dot(dir);
 
         //Smallest positive dot product
         if (dot_0 >= 0.0 && (dot_1 < 0.0 || dot_1 > dot_0) && (dot_2 < 0.0 || dot_2 > dot_0))
             return neighbors[0];
-        if (dot_1 >= 0.0 && (dot_2 < 0.0 || dot_2 > dot_0))
+        if (dot_1 >= 0.0 && (dot_2 < 0.0 || dot_2 > dot_1))
             return neighbors[1];
         return neighbors[2];
     }

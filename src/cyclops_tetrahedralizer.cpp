@@ -28,20 +28,22 @@
 
 using namespace CyclopsTetra3D;
 
-void Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points) {
-    vert_indices[0] = v0_idx;
-    vert_indices[1] = v1_idx;
-    vert_indices[2] = v2_idx;
-    vert_indices[3] = v3_idx;
+Tetrahedron Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points) {
+    Tetrahedron tet;
 
-    neighbors[0] = -1;
-    neighbors[1] = -1;
-    neighbors[2] = -1;
-    neighbors[3] = -1;
+    tet.vert_indices[0] = v0_idx;
+    tet.vert_indices[1] = v1_idx;
+    tet.vert_indices[2] = v2_idx;
+    tet.vert_indices[3] = v3_idx;
 
-    circumcenter = Math::tetrahedron_circumcenter(points[v0_idx], points[v1_idx], points[v2_idx], points[v3_idx]);
-    circumcircle_radius_squared = (circumcenter - points[v0_idx]).magnitude_squared();
-    center = (points[v0_idx] + points[v1_idx] + points[v2_idx] + points[v3_idx]) / 4.0;
+    tet.neighbors[0] = -1;
+    tet.neighbors[1] = -1;
+    tet.neighbors[2] = -1;
+    tet.neighbors[3] = -1;
+
+    tet.circumcenter = Math::tetrahedron_circumcenter(points[v0_idx], points[v1_idx], points[v2_idx], points[v3_idx]);
+    tet.circumcircle_radius_squared = (tet.circumcenter - points[v0_idx]).magnitude_squared();
+    tet.center = (points[v0_idx] + points[v1_idx] + points[v2_idx] + points[v3_idx]) / 4.0;
 
     Vector3 p0 = points[v0_idx];
     Vector3 p1 = points[v1_idx];
@@ -51,19 +53,17 @@ void Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_
     Plane test_plane(p0, p1, p2);
     if (test_plane.distance_to_plane(p3) > 0.0) {
         //Swap two vertices to change winding
-        vert_indices[0] = v1_idx;
-        vert_indices[1] = v0_idx;
+        tet.vert_indices[0] = v1_idx;
+        tet.vert_indices[1] = v0_idx;
     }
 
     //Should all be facing outside
     for (int i = 0; i < 4; i++) {
-        face_planes[i] = Plane(points[face_vert_indices[i][0]], points[face_vert_indices[i][1]], points[face_vert_indices[i][2]]);
-        // boundary_face[i] = vert_indices[face_vert_indices[i][0]] < num_boundary_points &&
-        //                    vert_indices[face_vert_indices[i][1]] < num_boundary_points &&
-        //                    vert_indices[face_vert_indices[i][2]] < num_boundary_points;
+        tet.face_planes[i] = Plane(points[face_vert_indices[i][0]], points[face_vert_indices[i][1]], points[face_vert_indices[i][2]]);
     }
 
-    valid = true;
+    tet.valid = true;
+    return tet;
 }
 
 //Vector3 Tetrahedron::calc_circumcenter(const std::vector<Vector3>& points) const {
@@ -226,15 +226,12 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     //Create tetrahedrons
     //create_tetrahedrons_internal(tess_points, bvh_tree, quality_threshold);
 
-    std::vector<Tetrahedron> tetrahedrons;
-    Tetrahedron tetra;
-    tetra.create_from_points(
+    tetrahedrons.push_back(Tetrahedron::create_from_points(
         int(tess_points.size() - 4),
         int(tess_points.size() - 3),
         int(tess_points.size() - 2),
         int(tess_points.size() - 1),
-        tess_points);
-    tetrahedrons.push_back(tetra);
+        tess_points));
 
     create_tetrahedrons_iter(tetrahedrons, tess_points);
 
@@ -340,15 +337,15 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
             vert_indices[2] = bad_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][2]];
             vert_indices[3] = i;
 
-            Tetrahedron new_tet;
-            new_tet.create_from_points(
+            int new_tet_idx = tetrahedrons.size();
+            tetrahedrons.push_back(Tetrahedron::create_from_points(
                 vert_indices[0],
                 vert_indices[1],
                 vert_indices[2],
                 vert_indices[3],
-                points);
-            tetrahedrons.push_back(new_tet);
-            int new_tet_idx = tetrahedrons.size() - 1;
+                points));
+
+            Tetrahedron& new_tet = tetrahedrons[new_tet_idx];
 
             //Update neighbor links to exterior tetrahedrons
             new_tet.neighbors[0] = neighbor_tet_idx;
@@ -366,9 +363,10 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
                 //Check for shared face
                 int shared_count = 0;
                 for (int face_idx = 1; face_idx < 4; face_idx++) {
-                    int other_face_idx = other_tet.find_face(new_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][0]], 
-                        new_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][1]], 
-                        new_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][2]]);
+                    int vi_0 = new_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][0]];
+                    int vi_1 = new_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][1]];
+                    int vi_2 = new_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][2]];
+                    int other_face_idx = other_tet.find_face(vi_0, vi_1, vi_2);
 
                     if (other_face_idx != -1) {
                         //Shared face
