@@ -182,54 +182,57 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
         }
 
         //Rebuild cavity with new triangles
-        std::vector<int> new_tet_indices;
+        std::vector<int> new_tri_indices;
         for (auto [bad_tet_idx, edge_idx] : outer_edges) {
             DelunayTriangle& bad_tri = triangles[bad_tet_idx];
 
-            int neighbor_tet_idx = bad_tri.neighbors[edge_idx];
+            int neighbor_tri_idx = bad_tri.neighbors[edge_idx];
 
             int vert_indices[3];
             vert_indices[0] = bad_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][0]];
             vert_indices[1] = bad_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][1]];
             vert_indices[2] = i;
 
-            DelunayTriangle new_tri;
-            new_tri.create_from_points(
+            int new_tri_idx = triangles.size();
+            DelunayTriangle new_tri_create;
+            new_tri_create.create_from_points(
                 vert_indices[0],
                 vert_indices[1],
                 vert_indices[2],
                 points);
-            triangles.push_back(new_tri);
-            int new_tet_idx = triangles.size() - 1;
+            triangles.push_back(new_tri_create);
+
+            DelunayTriangle& new_tri = triangles[new_tri_idx];
 
             //Update neighbor links to exterior tetrahedrons
-            new_tri.neighbors[0] = neighbor_tet_idx;
+            new_tri.neighbors[0] = neighbor_tri_idx;
             //Find face with same vertices with reverse winding
-            if (neighbor_tet_idx != -1) {
-                DelunayTriangle& neighbor_tri = triangles[neighbor_tet_idx];
-                neighbor_tri.neighbors[neighbor_tri.find_edge(vert_indices[0], vert_indices[1])] = new_tet_idx;
+            if (neighbor_tri_idx != -1) {
+                DelunayTriangle& neighbor_tri = triangles[neighbor_tri_idx];
+                neighbor_tri.neighbors[neighbor_tri.find_edge(vert_indices[0], vert_indices[1])] = new_tri_idx;
             }
 
             //Check other cavity filling tetrahedrons for shared faces
-            for (int j = 0; j < new_tet_indices.size(); j++) {
-                int other_tri_idx = new_tet_indices[j];
-                DelunayTriangle& other_tet = triangles[other_tri_idx];
+            for (int j = 0; j < new_tri_indices.size(); j++) {
+                int other_tri_idx = new_tri_indices[j];
+                DelunayTriangle& other_tri = triangles[other_tri_idx];
 
                 //Check for shared edge
                 int shared_count = 0;
                 for (int edge_idx = 1; edge_idx < 3; edge_idx++) {
-                    int other_face_idx = other_tet.find_edge(new_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][0]],
-                        DelunayTriangle::edge_vert_indices[edge_idx][new_tri.vert_indices[1]]);
+                    int vi_1 = new_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][1]];
+                    int vi_0 = new_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][0]];
+                    int other_face_idx = other_tri.find_edge(vi_1, vi_0);
 
                     if (other_face_idx != -1) {
                         //Shared edge
                         new_tri.neighbors[edge_idx] = other_tri_idx;
-                        other_tet.neighbors[other_face_idx] = new_tet_idx;
+                        other_tri.neighbors[other_face_idx] = new_tri_idx;
                     }
                 }
             }
 
-            new_tet_indices.push_back(new_tet_idx);
+            new_tri_indices.push_back(new_tri_idx);
         }
 
     }
