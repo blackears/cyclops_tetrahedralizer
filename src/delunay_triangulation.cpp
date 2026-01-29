@@ -95,8 +95,6 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
 
     create_triangles_iter(tess_points);
 
-    std::cout << plot_svg(tess_points) << std::endl;
-
     //Remove exterior triangles
     for (int i = 0; i < triangles.size(); i++) {
         DelunayTriangle& tri = triangles[i];
@@ -106,7 +104,9 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
                 tri.valid = false;
             }
         }
+
     }
+    std::cout << plot_svg(tess_points) << std::endl;
 }
 
 void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& points) {

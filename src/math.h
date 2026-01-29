@@ -24,7 +24,9 @@
 #ifndef CYCLOPS_MATH_H
 #define CYCLOPS_MATH_H
 
-#include  <vector>
+#include <vector>
+#include <string>
+#include <iostream>
 
 namespace CyclopsTetra3D {
 
@@ -52,6 +54,8 @@ struct Vector2 {
 
     Vector2 rot_CCW_90() { return Vector2(-y, x); }
     Vector2 rot_CW_90() { return Vector2(y, -x); }
+
+    std::string to_string() { return "(" + std::to_string(x) + ", " + std::to_string(y) + ")"; }
 
     real operator[](int index) const {
         if (index == 0) return x;
@@ -130,6 +134,10 @@ struct Vector2 {
         return lhs;
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const Vector2& obj) {
+        os << "(" << obj.x << ", " << obj.y << ")";
+        return os;
+    }
 };
 
 struct Vector3 {
@@ -261,6 +269,10 @@ struct Vector3 {
         return lhs;
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const Vector3& obj) {
+        os << "(" << obj.x << ", " << obj.y << ", " << obj.z << ")";
+        return os;
+    }
 };
 
 
@@ -298,6 +310,11 @@ struct Rectangle {
         real t_close_max = std::max(t_close.x, t_close.y);
         real t_far_min = std::min(t_far.x, t_far.y);
         return t_close_max <= t_far_min;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Rectangle& obj) {
+        os << "(" << obj.bb_min << ", " << obj.bb_max << ")";
+        return os;
     }
 };
 
@@ -338,6 +355,11 @@ struct BoundingBox {
         real t_far_min = std::min(std::min(t_far.x, t_far.y), t_far.z);
         return t_close_max <= t_far_min;
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const BoundingBox& obj) {
+        os << "(" << obj.bb_min << ", " << obj.bb_max << ")";
+        return os;
+    }
 };
 
 
@@ -365,6 +387,11 @@ struct Plane {
         real s = numer / denom;
         out_intersection = ray_origin + ray_direction * s;
         return true;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Plane& obj) {
+        os << "(" << obj.normal << ", " << obj.dot_origin << ")";
+        return os;
     }
 };
 

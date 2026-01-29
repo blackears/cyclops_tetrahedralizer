@@ -30,6 +30,8 @@
 
 #include "math.h"
 
+#include <iostream>
+
 using namespace CyclopsTetra3D;
 
 struct BVHTreeEdge2 {
@@ -45,10 +47,21 @@ struct BVHTreeEdge2 {
     }
 
     bool intersect_ray(const Vector2& ray_origin, const Vector2& ray_direction, Vector2& out_hit_pos, Vector2& out_hit_normal) const {
-        real dir_sq = ray_direction.dot(ray_direction);
-        real p0_hit = (p0 - ray_origin).dot(ray_direction) / dir_sq;
+        Vector2 line_dir = p1 - p0;
+        real det_denom = Math::det(line_dir, ray_direction);
+        if (det_denom == 0)
+            return false;
 
-        return p0_hit >= 0.0 && p0_hit <= 1.0;
+        real det_s = Math::det(ray_origin - p0, ray_direction);
+
+        real s = det_s / det_denom;
+        if (s < 0 || s > 1)
+            return false;
+
+        out_hit_pos = p0 + line_dir * s;
+        out_hit_normal = (ray_origin - out_hit_pos).normalized();
+
+        return true;
     }
 };
 
@@ -67,12 +80,14 @@ struct BVHTreeNode2 {
 
     void update_bounds(const std::vector<BVHTreeEdge2>& edges, const std::vector<BVHTreeNode2>& nodes) {
         if (num_edges > 0) {
+            //leaf node with edges as children
             bounds = edges[first_edge_offset].bounds;
             for (unsigned int i = 1; i < num_edges; i++) {
                 bounds = bounds.merge(edges[first_edge_offset + i].bounds);
             }
         }
         else {
+            //intermediate node with two nodes as children
             bounds = nodes[child_left_idx].bounds.merge(nodes[child_left_idx + 1].bounds);
         }
     }
@@ -81,12 +96,17 @@ struct BVHTreeNode2 {
         const std::vector<BVHTreeEdge2>& edges, const std::vector<BVHTreeNode2>& nodes,
         Vector2& out_hit_pos, Vector2& out_hit_normal, int& out_index) const {
 
-        if (!bounds.intersects_ray(ray_origin, ray_direction))
+        std::cout << "ray_cast: bounds " << bounds << std::endl;
+
+        if (!bounds.intersects_ray(ray_origin, ray_direction)) {
+            std::cout << "  missed bounds" << std::endl;
             return false;
+        }
 
         if (is_leaf()) {
             for (unsigned int i = 0; i < num_edges; i++) {
                 if (edges[first_edge_offset + i].intersect_ray(ray_origin, ray_direction, out_hit_pos, out_hit_normal)) {
+                    std::cout << "  isect edge" << std::endl;
                     out_index = first_edge_offset + i;
                     return true;
                 }
@@ -116,7 +136,7 @@ public:
 
     bool ray_cast(const Vector2& ray_origin, const Vector2& ray_direction, Vector2& out_hit_pos, Vector2& out_hit_normal, int& out_index) const;
 
-    bool is_inside(const Vector2& p, real dist_min = 0.0) const;
+    bool is_inside(const Vector2& p, real epsilon = 0.0) const;
 
 };
 

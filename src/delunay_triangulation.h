@@ -108,6 +108,11 @@ struct DelunayTriangle {
         return -1;
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const DelunayTriangle& obj) {
+        os << "{vert_indices:" << obj.vert_indices[0] << ", " << obj.vert_indices[1] << ", " << obj.vert_indices[2] << "}";
+        return os;
+    }
+
 };
 
 

@@ -113,8 +113,12 @@ void BVHTree2::build_from_edges(const std::vector<Vector2>& points, const std::v
     build_nodes_recursive(0, nodes_used);
 }
 
-bool BVHTree2::is_inside(const Vector2& p, real dist_min) const {
+//Checks if point is inside manifold with clockwise winding.  Ie, casts rays to make sure it 
+//  hits at least one edge with CCW winding wrt it and only edges with that winding.
+bool BVHTree2::is_inside(const Vector2& p, real epsilon) const {
     //Check multiple directions to minimize chance of hitting an edge
+
+    std::cout << "is_inside " << p << std::endl;
 
     int num_inside = 0;
 
@@ -123,19 +127,43 @@ bool BVHTree2::is_inside(const Vector2& p, real dist_min) const {
         Vector2 hit_normal;
         int hit_index;
 
-        nodes[0].ray_cast(p, face_check_dirs[i], edges, nodes, hit_pos, hit_normal, hit_index);
-        real hit_distance = (hit_pos - p).magnitude();
-        //Check hit is valid
-        if (hit_index >= 0) {
-            if (hit_normal.dot(face_check_dirs[i]) > 0) {
+        Vector2 cast_dir = face_check_dirs[i];
+
+        std::cout << "casting origin: " << p << " dir: " << cast_dir << std::endl;
+
+        if (nodes[0].ray_cast(p, cast_dir, edges, nodes, hit_pos, hit_normal, hit_index)) {
+            std::cout << "hit pos: " << hit_pos << " hit norm: " << hit_normal << " hit idx: " << hit_index << std::endl;
+
+            const BVHTreeEdge2& edge = edges[hit_index];
+            if (Math::det(edge.p0 - p, edge.p1 - edge.p0) > 0) {
                 num_inside++;
+                std::cout << "!!inside " << std::endl;
             }
 
-            if (dist_min > 0.0 && hit_distance < dist_min) {
+            //if (hit_normal.dot(cast_dir) > 0) {
+            //    num_inside++;
+            //    std::cout << "!!inside " << std::endl;
+            //}
+            else {
                 //If hit outside face, we are outside
                 return false;
             }
+
+            //real hit_distance = (hit_pos - p).magnitude();
+            ////Check hit is valid
+            //if (hit_index >= 0) {
+            //    if (hit_normal.dot(cast_dir) > 0) {
+            //        num_inside++;
+            //    }
+
+            //    if (epsilon > 0.0 && hit_distance < epsilon) {
+            //        //If hit outside face, we are outside
+            //        return false;
+            //    }
+            //}
         }
+        else
+            return false;
     }
 
     return num_inside >= 2;
