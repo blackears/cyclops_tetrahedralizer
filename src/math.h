@@ -404,8 +404,16 @@ public:
         return off_val < 0 ? off_val % range + range + min_val : off_val % range + min_val;
     }
 
+    // Determinant of a 2x2 matrix where [a b] are columns
     static real det(Vector2 a, Vector2 b) {
-        return a.x * b.y - a.y * b.x;
+        return a.x * b.y - b.x * a.y;
+    }
+
+    // Determinant of a 3x3 matrix where [a b c] are columns
+    static real det(Vector3 a, Vector3 b, Vector3 c) {
+        return a.x * (b.y * c.z - c.y * b.z)
+            + b.x * (c.y * a.z - a.y * c.z)
+            + c.x * (a.y * b.z - b.y * a.z);
     }
 
     static bool triangle_contains_point(const Vector2& p, const Vector2& p0, const Vector2& p1, const Vector2& p2) {
