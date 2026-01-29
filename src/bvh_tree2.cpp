@@ -115,7 +115,7 @@ void BVHTree2::build_from_edges(const std::vector<Vector2>& points, const std::v
 
 //Checks if point is inside manifold with clockwise winding.  Ie, casts rays to make sure it 
 //  hits at least one edge with CCW winding wrt it and only edges with that winding.
-bool BVHTree2::is_inside(const Vector2& p, real epsilon) const {
+bool BVHTree2::is_inside(const Vector2& p, bool wind_ccw) const {
     //Check multiple directions to minimize chance of hitting an edge
 
     std::cout << "is_inside " << p << std::endl;
@@ -135,7 +135,8 @@ bool BVHTree2::is_inside(const Vector2& p, real epsilon) const {
             std::cout << "hit pos: " << hit_pos << " hit norm: " << hit_normal << " hit idx: " << hit_index << std::endl;
 
             const BVHTreeEdge2& edge = edges[hit_index];
-            if (Math::det(edge.p0 - p, edge.p1 - edge.p0) > 0) {
+            real edge_side_test = Math::det(edge.p0 - p, edge.p1 - edge.p0);
+            if ((wind_ccw && edge_side_test > 0) || (!wind_ccw && edge_side_test < 0)) {
                 num_inside++;
                 std::cout << "!!inside " << std::endl;
             }

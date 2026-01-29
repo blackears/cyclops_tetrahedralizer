@@ -28,7 +28,7 @@
 
 using namespace CyclopsTetra3D;
 
-void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution) {
+void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution, bool wind_ccw, bool jitter) {
     //Create BVH from input triangles
     BVHTree2 bvh_tree;
     bvh_tree.build_from_edges(points, indices);
@@ -41,9 +41,16 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
     std::default_random_engine rng_eng(r());
     std::uniform_real_distribution<real> rand_eps(-1e-5, 1e-5);
 
-    for (const Vector2& p : points) {
-        Vector2 jit_p = p + Vector2(rand_eps(rng_eng), rand_eps(rng_eng));
-        tess_points.push_back(jit_p);
+    if (jitter) {
+        for (const Vector2& p : points) {
+            Vector2 jit_p = p + Vector2(rand_eps(rng_eng), rand_eps(rng_eng));
+            tess_points.push_back(jit_p);
+        }
+    }
+    else {
+        for (const Vector2& p : points) {
+            tess_points.push_back(p);
+        }
     }
 
     //Find bounding box
@@ -61,9 +68,9 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
         int h = max_dim / resolution;
 
         for (int xi = 0; xi <= int(bb_size.x / h); xi++) {
-            float x = bb_min.x + xi * h + rand_eps(rng_eng);
+            float x = bb_min.x + xi * h + (jitter ? rand_eps(rng_eng) : 0);
             for (int yi = 0; yi <= int(bb_size.y / h); yi++) {
-                float y = bb_min.y + yi * h + rand_eps(rng_eng);
+                float y = bb_min.y + yi * h + (jitter ? rand_eps(rng_eng) : 0);
                 Vector2 p = Vector2(x, y);
 
                 if (bvh_tree.is_inside(p)) {

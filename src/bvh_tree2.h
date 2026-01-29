@@ -136,7 +136,7 @@ public:
 
     bool ray_cast(const Vector2& ray_origin, const Vector2& ray_direction, Vector2& out_hit_pos, Vector2& out_hit_normal, int& out_index) const;
 
-    bool is_inside(const Vector2& p, real epsilon = 0.0) const;
+    bool is_inside(const Vector2& p, bool wind_ccw = true) const;
 
 };
 
