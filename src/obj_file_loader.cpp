@@ -209,10 +209,10 @@ void ObjFileLoader::triangularize() {
             }
 
             //Triangulate faces
-            DelunayTriangulator triangulator;
+            DelaunayTriangulator triangulator;
             triangulator.create_triangles(face_points, face_point_indices);
 
-            for (const DelunayTriangle& tri : triangulator.get_triangles()) {
+            for (const DelaunayTriangle& tri : triangulator.get_triangles()) {
                 if (tri.valid) {
                     new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[0]]);
                     new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[1]]);

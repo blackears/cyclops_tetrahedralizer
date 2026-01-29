@@ -21,8 +21,8 @@
  */
 
 
-#ifndef DELUNAY_TRIANGULATION_H
-#define DELUNAY_TRIANGULATION_H
+#ifndef CYCLOPS_DELAUNAY_TRIANGULATION_H
+#define CYCLOPS_DELAUNAY_TRIANGULATION_H
 
 #include <vector>
 #include <string>
@@ -31,7 +31,7 @@
 namespace CyclopsTetra3D {
 
 //Face winding - face normals points outward
-struct DelunayTriangle {
+struct DelaunayTriangle {
     static constexpr int edge_vert_indices[3][2] = { {0, 1}, {1, 2}, {2, 0} };
 
     int vert_indices[3];
@@ -42,8 +42,8 @@ struct DelunayTriangle {
     real circumcircle_radius_squared;
     Vector2 center;
 
-    static DelunayTriangle create_from_points(int v0_idx, int v1_idx, int v2_idx, const std::vector<Vector2>& points) {
-        DelunayTriangle tri;
+    static DelaunayTriangle create_from_points(int v0_idx, int v1_idx, int v2_idx, const std::vector<Vector2>& points) {
+        DelaunayTriangle tri;
 
         tri.vert_indices[0] = v0_idx;
         tri.vert_indices[1] = v1_idx;
@@ -108,7 +108,7 @@ struct DelunayTriangle {
         return -1;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const DelunayTriangle& obj) {
+    friend std::ostream& operator<<(std::ostream& os, const DelaunayTriangle& obj) {
         os << "{vert_indices:" << obj.vert_indices[0] << ", " << obj.vert_indices[1] << ", " << obj.vert_indices[2] << "}";
         return os;
     }
@@ -116,8 +116,8 @@ struct DelunayTriangle {
 };
 
 
-class DelunayTriangulator {
-    std::vector<DelunayTriangle> triangles;
+class DelaunayTriangulator {
+    std::vector<DelaunayTriangle> triangles;
 
 private:
     void create_triangles_iter(const std::vector<Vector2>& points);
@@ -125,7 +125,7 @@ private:
 public:
     void create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution = 0, bool wind_ccw = true, bool jitter = true);
 
-    const std::vector<DelunayTriangle>& get_triangles() const { return triangles; }
+    const std::vector<DelaunayTriangle>& get_triangles() const { return triangles; }
 
     std::string plot_svg(const std::vector<Vector2>& points) const;
 };

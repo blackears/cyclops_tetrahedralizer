@@ -28,7 +28,7 @@
 
 using namespace CyclopsTetra3D;
 
-void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution, bool wind_ccw, bool jitter) {
+void DelaunayTriangulator::create_triangles(const std::vector<Vector2>& points, const std::vector<int>& indices, float resolution, bool wind_ccw, bool jitter) {
     //Create BVH from input triangles
     BVHTree2 bvh_tree;
     bvh_tree.build_from_edges(points, indices);
@@ -94,7 +94,7 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
     tess_points.push_back(btri_v1);
     tess_points.push_back(btri_v2);
 
-    triangles.push_back(DelunayTriangle::create_from_points(
+    triangles.push_back(DelaunayTriangle::create_from_points(
         int(tess_points.size() - 3),
         int(tess_points.size() - 2),
         int(tess_points.size() - 1),
@@ -104,7 +104,7 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
 
     //Remove exterior triangles
     for (int i = 0; i < triangles.size(); i++) {
-        DelunayTriangle& tri = triangles[i];
+        DelaunayTriangle& tri = triangles[i];
         if (tri.valid) {
             if (!bvh_tree.is_inside(tri.center, 1e-3))
             {
@@ -116,14 +116,14 @@ void DelunayTriangulator::create_triangles(const std::vector<Vector2>& points, c
     std::cout << plot_svg(tess_points) << std::endl;
 }
 
-void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& points) {
+void DelaunayTriangulator::create_triangles_iter(const std::vector<Vector2>& points) {
     for (int i = 0; i < points.size() - 3; i++) {
         Vector2 p = points[i];
 
         int tri_idx = 0;
 
         while (tri_idx != -1) {
-            DelunayTriangle& tri = triangles[tri_idx];
+            DelaunayTriangle& tri = triangles[tri_idx];
             if (tri.valid)
                 break;
             
@@ -132,7 +132,7 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
 
         //Walk toward containing triangle
         while (tri_idx != -1) {
-            DelunayTriangle& tri = triangles[tri_idx];
+            DelaunayTriangle& tri = triangles[tri_idx];
             if (tri.contains_point(p, points)) {
                 break;
             }
@@ -146,7 +146,7 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
         }
 
         //Find triangles with circumspheres containing point
-        DelunayTriangle& tri = triangles[tri_idx];
+        DelaunayTriangle& tri = triangles[tri_idx];
         tri.valid = false;
 
         std::vector<int> bad_tri_indices;
@@ -163,14 +163,14 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
             auto [current_tri_idx, edge_idx] = bad_tri_candidates.back();
             bad_tri_candidates.pop_back();
 
-            DelunayTriangle& current_tri = triangles[current_tri_idx];
+            DelaunayTriangle& current_tri = triangles[current_tri_idx];
 
             int neighbor_idx = current_tri.neighbors[edge_idx];
             if (neighbor_idx == -1) {
                 outer_edges.push_back(std::make_tuple(current_tri_idx, edge_idx));
             }
             else {
-                DelunayTriangle& neighbor_tri = triangles[neighbor_idx];
+                DelaunayTriangle& neighbor_tri = triangles[neighbor_idx];
                 if (!neighbor_tri.valid) {
                     continue;
                 }
@@ -192,42 +192,42 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
         //Rebuild cavity with new triangles
         std::vector<int> new_tri_indices;
         for (auto [bad_tri_idx, edge_idx] : outer_edges) {
-            DelunayTriangle& bad_tri = triangles[bad_tri_idx];
+            DelaunayTriangle& bad_tri = triangles[bad_tri_idx];
 
             int neighbor_tri_idx = bad_tri.neighbors[edge_idx];
 
             int vert_indices[3];
-            vert_indices[0] = bad_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][0]];
-            vert_indices[1] = bad_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][1]];
+            vert_indices[0] = bad_tri.vert_indices[DelaunayTriangle::edge_vert_indices[edge_idx][0]];
+            vert_indices[1] = bad_tri.vert_indices[DelaunayTriangle::edge_vert_indices[edge_idx][1]];
             vert_indices[2] = i;
 
             int new_tri_idx = triangles.size();
-            triangles.push_back(DelunayTriangle::create_from_points(
+            triangles.push_back(DelaunayTriangle::create_from_points(
                 vert_indices[0],
                 vert_indices[1],
                 vert_indices[2],
                 points));
 
-            DelunayTriangle& new_tri = triangles[new_tri_idx];
+            DelaunayTriangle& new_tri = triangles[new_tri_idx];
 
             //Update neighbor links to exterior triangles
             new_tri.neighbors[0] = neighbor_tri_idx;
             //Find face with same vertices with reverse winding
             if (neighbor_tri_idx != -1) {
-                DelunayTriangle& neighbor_tri = triangles[neighbor_tri_idx];
+                DelaunayTriangle& neighbor_tri = triangles[neighbor_tri_idx];
                 neighbor_tri.neighbors[neighbor_tri.find_edge(vert_indices[1], vert_indices[0])] = new_tri_idx;
             }
 
             //Check other cavity filling triangles for shared faces
             for (int j = 0; j < new_tri_indices.size(); j++) {
                 int other_tri_idx = new_tri_indices[j];
-                DelunayTriangle& other_tri = triangles[other_tri_idx];
+                DelaunayTriangle& other_tri = triangles[other_tri_idx];
 
                 //Check for shared edge
                 int shared_count = 0;
                 for (int edge_idx = 1; edge_idx < 3; edge_idx++) {
-                    int vi_1 = new_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][1]];
-                    int vi_0 = new_tri.vert_indices[DelunayTriangle::edge_vert_indices[edge_idx][0]];
+                    int vi_1 = new_tri.vert_indices[DelaunayTriangle::edge_vert_indices[edge_idx][1]];
+                    int vi_0 = new_tri.vert_indices[DelaunayTriangle::edge_vert_indices[edge_idx][0]];
                     int other_face_idx = other_tri.find_edge(vi_1, vi_0);
 
                     if (other_face_idx != -1) {
@@ -243,9 +243,9 @@ void DelunayTriangulator::create_triangles_iter(const std::vector<Vector2>& poin
     }
 }
 
-std::string DelunayTriangulator::plot_svg(const std::vector<Vector2>& points) const {
+std::string DelaunayTriangulator::plot_svg(const std::vector<Vector2>& points) const {
     std::string result = "<svg><g>";
-    for (const DelunayTriangle& tri : triangles) {
+    for (const DelaunayTriangle& tri : triangles) {
         if (!tri.valid)
             continue;
 
