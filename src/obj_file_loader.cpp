@@ -27,7 +27,7 @@
 #include <fstream>
 #include <regex>
 
-#include "delunay_triangulation.h"
+#include "delaunay_triangulation.h"
 
 using namespace CyclopsTetra3D;
 

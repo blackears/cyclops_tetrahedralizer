@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-#include "delunay_triangulation.h"
+#include "delaunay_triangulation.h"
 
 #include <random>
 #include <iostream>
