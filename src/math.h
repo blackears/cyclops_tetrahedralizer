@@ -370,8 +370,16 @@ struct Plane {
 
     Plane() : normal(Vector3()), dot_origin(0) {}
     Plane(const Vector3& normal, real dot_origin) : normal(normal), dot_origin(dot_origin) {}
-    Plane(const Vector3& normal, const Vector3& origin) : normal(normal), dot_origin(origin.dot(normal)) {}
-    Plane(const Vector3& p0, const Vector3& p1, const Vector3& p2) : normal((p1 - p0).cross(p2 - p0)), dot_origin(p0.dot(normal)) {}
+
+    static Plane create(const Vector3& normal, const Vector3& p) {
+        return Plane(normal, p.dot(normal));
+    }
+
+    static Plane create(const Vector3& p0, const Vector3& p1, const Vector3& p2) {
+        Vector3 normal = ((p1 - p0).cross(p2 - p0)).normalized();
+        real dot = p0.dot(normal);
+        return Plane(normal, dot);
+    }
 
     real distance_to_plane(const Vector3& p) const {
         return normal.dot(p) - dot_origin;
@@ -439,11 +447,22 @@ public:
         real det_r = det(r0, r1);
         if (det_r == 0)
             return p0;
-            
+
         Vector2 dp = p1 - p0;
         real det_s = det(dp, r1);
         real s = det_s / det_r;
         return p0 + r0 * s;
+    }
+
+    static bool tetrahedron_contains_point(const Vector3& p, const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3) {
+        //Barycentric coords - these subregions should have the same signed area as the whole
+        real area = Math::det(p1 - p0, p2 - p0, p3 - p0);
+        real area_0 = Math::det(p1 - p, p2 - p, p3 - p);
+        real area_1 = Math::det(p - p0, p2 - p0, p3 - p0);
+        real area_2 = Math::det(p1 - p0, p - p0, p3 - p0);
+        real area_3 = Math::det(p1 - p0, p2 - p0, p - p0);
+
+        return signbit(area) == signbit(area_0) && signbit(area) == signbit(area_1) && signbit(area) == signbit(area_2) && signbit(area) == signbit(area_3);
     }
 
     static Vector3 tetrahedron_circumcenter(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3) {

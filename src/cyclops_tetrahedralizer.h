@@ -24,7 +24,8 @@
 #ifndef CYCLOPS_TETRAHEDRALIZER_H
 #define CYCLOPS_TETRAHEDRALIZER_H
 
-#include  <vector>
+#include <vector>
+#include <array>
 
 #include "math.h"
 
@@ -33,23 +34,29 @@ namespace CyclopsTetra3D {
 
 
 //Face winding - face normals points outward
-struct Tetrahedron {
+class Tetrahedron {
     //Vertex ordering per face
-    static constexpr int face_vert_indices[4][3] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 2}, {0, 2, 3}};
-    static constexpr int face_missing_vert_index[4] = {3, 2, 0, 1};
+    //Tetrahedron faces wind ccw when viewed from outside
+    static constexpr std::array<std::array<int, 3>, 4> face_vert_indices = { {
+        {0, 1, 2}, {1, 0, 3}, {2, 3, 0}, {3, 2, 1}
+        } };
 
-    int vert_indices[4];
-    int neighbors[4];
+private:
+    std::array<int, 4> vert_indices;
+    std::array<int, 4> neighbors;
 
     Vector3 circumcenter;
     real circumcircle_radius_squared;
     Vector3 center;
 
-    Plane face_planes[4];
+    std::array<Plane, 4> face_planes;
 
     bool valid;
+public:
 
     static Tetrahedron create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points);
+
+    const std::array<int, 4>& get_vert_indices() const { return vert_indices; }
 
     bool has_neighbor(int neighbor_idx) const {
         for (int i = 0; i < 4; i++) {
@@ -60,29 +67,6 @@ struct Tetrahedron {
         return false;
     }
     
-    //static Vector3 calc_circumcenter(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3) {
-    //    //https://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter
-    //    
-    //    //From Matthias Muller
-    //    //https://github.com/matthias-research/pages/blob/62fa5a972572338a9afb7f50bfd22aa8d7d90e19/tenMinutePhysics/BlenderTetPlugin.py#L68
-    //    Vector3 b = p1 - p0;
-    //    Vector3 c = p2 - p0;
-    //    Vector3 d = p3 - p0;
-
-    //    real det = 2.0 * (b.x * (c.y * d.z - c.z * d.y)
-    //        - b.y * (c.x * d.z - c.z * d.x)
-    //        + b.z * (c.x * d.y - c.y * d.x));
-
-    //    if (det == 0.0) {
-    //        return p0;
-    //    }
-    //    else {
-    //        Vector3 v = c.cross(d) * b.dot(b) + d.cross(b) * c.dot(c) + b.cross(c) * d.dot(d);
-    //        v /= det;
-    //        return p0 + v;
-    //    }
-    //}
-
     bool point_in_circumsphere(const Vector3& p, const std::vector<Vector3>& points) const {
         return (circumcenter - p).magnitude_squared() < circumcircle_radius_squared;
     }
@@ -107,21 +91,28 @@ struct Tetrahedron {
         }
         return -1;
     }
+
+    friend class CyclopsTetrahedralizer;
 };
 
 class CyclopsTetrahedralizer {
-    Vector3* point_list;
+    std::vector<Vector3> tess_points;
     std::vector<Tetrahedron> tetrahedrons;
 
 private:
     void create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points);
 
 public:
+    const std::vector<Vector3>& get_points() const { return tess_points; }
+    std::vector<Vector3>& get_points() { return tess_points; }
+    const std::vector<Tetrahedron>& get_tetrahedra() const { return tetrahedrons; }
+
     //@param points of triangles
     //@param indices of triangles (3 per triangle)
     //@param resolution spacing for extra interior points
     void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float resolution = 0);
 
+    void get_mesh(std::vector<Vector3>& out_points, std::vector<int>& out_indices);
 };
 
 }

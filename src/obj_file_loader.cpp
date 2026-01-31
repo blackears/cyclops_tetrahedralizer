@@ -136,9 +136,7 @@ void ObjFileLoader::save_obj_file(const std::string& filename, const std::vector
 }
 
 
-void ObjFileLoader::triangularize() {
-    std::vector<int> new_face_vertex_indices;
-    std::vector<int> new_face_vertex_counts;
+void ObjFileLoader::triangularized_indices(std::vector<int>& new_face_vertex_indices) {
 
     int face_vtx_cursor = 0;
     for (int face_size : face_vertex_counts) {
@@ -146,7 +144,6 @@ void ObjFileLoader::triangularize() {
             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor]);
             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 1]);
             new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 2]);
-            new_face_vertex_counts.push_back(3);
             face_vtx_cursor += 3;
         }
         else if (face_size == 4) {
@@ -174,8 +171,6 @@ void ObjFileLoader::triangularize() {
                 new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 2]);
                 new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + 3]);
             }
-            new_face_vertex_counts.push_back(3);
-            new_face_vertex_counts.push_back(3);
 
             face_vtx_cursor += 4;
         }
@@ -217,15 +212,10 @@ void ObjFileLoader::triangularize() {
                     new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[0]]);
                     new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[1]]);
                     new_face_vertex_indices.push_back(face_vertex_indices[face_vtx_cursor + tri.vert_indices[2]]);
-
-                    new_face_vertex_counts.push_back(3);
                 }
             }
 
             face_vtx_cursor += face_size;
         }
     }
-    
-    face_vertex_indices = std::move(new_face_vertex_indices);
-    face_vertex_counts = std::move(new_face_vertex_counts);
 }

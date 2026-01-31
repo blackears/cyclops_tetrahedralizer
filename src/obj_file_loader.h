@@ -21,7 +21,7 @@
  */
 
 /*
- * In .obj files, clockwise winding triangles point outward.
+ * In .obj files, counter clockwise winding triangles point outward.
  */
  
 #ifndef CYCLOPS_OBJ_FILE_LOADER_H
@@ -82,10 +82,18 @@ public:
     ObjFileLoader() = default;
     ~ObjFileLoader() = default;
 
+    const std::vector<Vector3>& get_points() const { return points; }
+    std::vector<Vector3>& get_points() { return points; }
+    const std::vector<int>& get_face_vertex_indices() const { return face_vertex_indices; }
+    std::vector<int>& get_face_vertex_indices() { return face_vertex_indices; }
+    const std::vector<int>& get_face_vertex_counts() const { return face_vertex_counts; }
+    std::vector<int>& get_face_vertex_counts() { return face_vertex_counts; }
+
     bool load_obj_file(const std::string& filename);
     void save_obj_file(const std::string& filename, const std::vector<Vector3>& points);
 
-    void triangularize();
+    //Get point indices of a triangularized mesh
+    void triangularized_indices(std::vector<int>& new_face_vertex_indices);
 };
 
 

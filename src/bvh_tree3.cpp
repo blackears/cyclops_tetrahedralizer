@@ -60,7 +60,7 @@ void BVHTree3::build_nodes_recursive(int root_node_idx, int& nodes_used) {
     int j = i + root_node.num_triangles - 1;
     while (i <= j) {
         BVHTreeTriangle3& tri = triangles[i];
-        if (tri.centroid[axis] < midpoint) {
+        if (tri.centroid[axis] <= midpoint) {
             i++;
         } else {
             std::swap(triangles[i], triangles[j]);

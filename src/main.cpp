@@ -79,13 +79,21 @@ int main(int argc, char **argv)
 
 	// Load the source file
 	ObjFileLoader loader;
-//	loader.load_obj_file(source_file);
 	if (!loader.load_obj_file(source_file))
 	{
 		cout << "Failed to load source file: " << source_file << endl;
 		return 1;
 	}
-	loader.triangularize();
+
+	std::vector<int> face_vertex_indices;
+	loader.triangularized_indices(face_vertex_indices);
+
+	//Tetrahedralize
+	CyclopsTetrahedralizer tetralizer;
+	tetralizer.create_tetrahedrons(loader.get_points(), face_vertex_indices);
+
+	ObjFileLoader result;
+
 
 	cout << "Hello CMake3." << endl;
 	return 0;
