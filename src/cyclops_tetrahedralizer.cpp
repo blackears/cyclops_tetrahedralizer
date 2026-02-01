@@ -178,10 +178,10 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     Vector3 btet_v2 = bb_min + Vector3(0, bb_size.y * 3.0, 0);
     Vector3 btet_v3 = bb_min + Vector3(0, 0, bb_size.z * 3.0);
     //Add margin
-    btet_v0 += (btet_v0 - bb_center) * 0.1;
-    btet_v1 += (btet_v1 - bb_center) * 0.1;
-    btet_v2 += (btet_v2 - bb_center) * 0.1;
-    btet_v3 += (btet_v3 - bb_center) * 0.1;
+    btet_v0 += (btet_v0 - bb_center) * 0.2;
+    btet_v1 += (btet_v1 - bb_center) * 0.2;
+    btet_v2 += (btet_v2 - bb_center) * 0.2;
+    btet_v3 += (btet_v3 - bb_center) * 0.2;
 
     tess_points.push_back(btet_v0);
     tess_points.push_back(btet_v1);
@@ -217,6 +217,9 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points) {
     //Last 4 points are bounding tetrahedron
     for (int i = 0; i < points.size() - 4; i++) {
+        //if (i >= 5)
+        //    break;
+
         Vector3 p = points[i];
 
         int tet_idx = 0;
@@ -375,8 +378,9 @@ void CyclopsTetrahedralizer::save_obj_file_line_segments(const std::string& file
 
     file << "# Cyclops Tetrahedralizer" << std::endl;
     file << "# https://github.com/blackears/cyclops_tetrahedralizer" << std::endl;
+    int p_idx = 0;
     for (const auto& p : tess_points) {
-        file << "v " << p.x << " " << p.y << " " << p.z << std::endl;
+        file << "v " << p.x << " " << p.y << " " << p.z << " \t#" << p_idx++ + 1 << std::endl;
     }
 
     std::set<Vector2> used_edges;
@@ -392,7 +396,7 @@ void CyclopsTetrahedralizer::save_obj_file_line_segments(const std::string& file
 
                 if (used_edges.find(Vector2(vi0, vi1)) == used_edges.end() && used_edges.find(Vector2(vi1, vi0)) == used_edges.end()) {
                     used_edges.insert(Vector2(vi0, vi1));
-                    file << "l " << vi0 << " " << vi1 << std::endl;
+                    file << "l " << vi0 + 1 << " " << vi1 + 1 << std::endl;
                 }
             }
         }
@@ -406,8 +410,9 @@ void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {
 
     file << "# Cyclops Tetrahedralizer" << std::endl;
     file << "# https://github.com/blackears/cyclops_tetrahedralizer" << std::endl;
+    int p_idx = 0;
     for (const auto& p : tess_points) {
-        file << "v " << p.x << " " << p.y << " " << p.z << std::endl;
+        file << "v " << p.x << " " << p.y << " " << p.z << " \t#" << p_idx++ + 1 << std::endl;
     }
 
     for (auto& tet : tetrahedra) {
@@ -442,9 +447,9 @@ void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {
             file << "f";
 
             for (int i = 0; i < 3; ++i) {
-                file << " " << tet.vert_indices[Tetrahedron::face_vert_indices[j][i]]
-                    << "/" << (j * 3 + i)
-                    << "/" << (tet_count * 4 + j);
+                file << " " << tet.vert_indices[Tetrahedron::face_vert_indices[j][i]] + 1
+                    << "/" << (j * 3 + i) + 1
+                    << "/" << (tet_count * 4 + j) + 1;
             }
 
             file << std::endl;

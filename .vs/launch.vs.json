@@ -7,7 +7,7 @@
       "project": "CMakeLists.txt",
       "projectTarget": "cyclopsTetrahedralizer.exe",
       "name": "cyclopsTetrahedralizer.exe",
-      "args": [ "-e", "../../../assets/pyramid.obj" ]
+      "args": [ "../../../assets/pyramid.obj" ]
     }
   ]
 }
