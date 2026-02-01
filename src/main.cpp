@@ -27,7 +27,7 @@
 #include <string>
 
 #include "cyclops_tetrahedralizer.h"
-#include "obj_file_loader.h"
+#include "wavefront_obj_file.h"
 
 using namespace std;
 using namespace CyclopsTetra3D;

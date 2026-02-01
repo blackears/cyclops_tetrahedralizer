@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-#include "obj_file_loader.h"
+#include "wavefront_obj_file.h"
 
 #include <stdexcept>
 #include <filesystem>
