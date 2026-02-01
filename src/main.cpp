@@ -43,13 +43,22 @@ bool parse_command_line(int argc, char** argv, std::map<std::string, std::string
 		std::string arg = argv[i];
 		if (arg[0] == '-')
 		{
-			std::string option_name = arg.substr(1);
+			std::string option_name;
+			if (arg[1] == '-') {
+				option_name = arg.substr(2);
+			}
+			else {
+				option_name = arg.substr(1);
+			}
+
 			std::string option_value;
-			if ((i + 1) < argc)
+			if ((i + 1) < argc && argv[i + 1][0] != '-')
 			{
 				option_value = argv[i + 1];
 				++i;
+				out_options[option_name] = option_value;
 			}
+
 			out_options[option_name] = option_value;
 		}
 		else
@@ -67,6 +76,24 @@ bool parse_command_line(int argc, char** argv, std::map<std::string, std::string
 	return true;
 }
 
+void print_help(bool full = false) {
+	cout << "Usage" << endl;
+	cout << endl;
+	cout << "\tcyclopsTetrahedralizer [options] <path to source file>" << endl;
+	cout << endl;
+	cout << "Specify a source file in the .obj format to read." << endl;
+
+	if (full) {
+		cout << endl;
+		cout << "\t-o, --out       output .obj file that will be written" << endl;
+		cout << "\t-h, --help      help message" << endl;
+	}
+	else {
+		cout << endl;
+		cout << "Run 'cyclopsTetrahedralizer --help' for more information." << endl;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	std::map<std::string, std::string> options;
@@ -74,11 +101,33 @@ int main(int argc, char **argv)
 
 	if (!parse_command_line(argc, argv, options, source_file))
 	{
+		print_help();
 		return 1;
 	}
 
+	if (options.find("h") != options.end() || options.find("help") != options.end()) {
+		print_help(true);
+		return 0;
+	}
+
+	std::string output_file;
+	if (options.find("o") != options.end()) {
+		output_file = options["o"];
+	}
+	else if (options.find("out") != options.end()) {
+		output_file = options["out"];
+	}
+	else {
+		int dot_idx = source_file.find_last_of(".");
+		if (dot_idx == std::string::npos)
+			output_file = source_file + "_tetra.obj";
+		else
+			output_file = source_file.substr(0, dot_idx) + "_tetra.obj";
+	}
+
+
 	// Load the source file
-	ObjFileLoader loader;
+	WavefrontObjFile loader;
 	if (!loader.load_obj_file(source_file))
 	{
 		cout << "Failed to load source file: " << source_file << endl;
@@ -92,10 +141,18 @@ int main(int argc, char **argv)
 	CyclopsTetrahedralizer tetralizer;
 	tetralizer.create_tetrahedrons(loader.get_points(), face_vertex_indices);
 
-	ObjFileLoader result;
+	//Export mesh
+	//std::vector<int> tri_mesh_vert_indices;
+	//tetralizer.get_tetrahedra_as_tri_mesh_indices(tri_mesh_vert_indices);
+	//std::vector<int> tri_mesh_face_vert_counts;
+	//tri_mesh_face_vert_counts.resize(tri_mesh_vert_indices.size() / 3);
+	//std::fill(tri_mesh_face_vert_counts.begin(), tri_mesh_face_vert_counts.end(), 3);
+	//WavefrontObjFile result(tetralizer.get_points(), tri_mesh_vert_indices, tri_mesh_face_vert_counts);
 
 
-	cout << "Hello CMake3." << endl;
+	tetralizer.save_obj_file(output_file);
+
+	cout << "Writing tetrahedralization: " << output_file << endl;
 	return 0;
 }
 

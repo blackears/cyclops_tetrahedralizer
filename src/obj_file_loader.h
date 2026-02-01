@@ -24,8 +24,8 @@
  * In .obj files, counter clockwise winding triangles point outward.
  */
  
-#ifndef CYCLOPS_OBJ_FILE_LOADER_H
-#define CYCLOPS_OBJ_FILE_LOADER_H
+#ifndef CYCLOPS_WAVEFRONT_OBJ_FILE_H
+#define CYCLOPS_WAVEFRONT_OBJ_FILE_H
 
 #include <vector>
 #include <string>
@@ -34,7 +34,7 @@
 
 namespace CyclopsTetra3D {
 
-class ObjFileLoader
+class WavefrontObjFile
 {
     std::vector<Vector3> points;
     std::vector<int> face_vertex_indices;
@@ -79,8 +79,12 @@ class ObjFileLoader
     }
 
 public:
-    ObjFileLoader() = default;
-    ~ObjFileLoader() = default;
+    WavefrontObjFile() = default;
+    ~WavefrontObjFile() = default;
+    WavefrontObjFile(std::vector<Vector3> points, std::vector<int> face_vertex_indices, std::vector<int> face_vertex_counts) :
+        points(points),
+        face_vertex_indices(face_vertex_indices),
+        face_vertex_counts(face_vertex_counts) {}
 
     const std::vector<Vector3>& get_points() const { return points; }
     std::vector<Vector3>& get_points() { return points; }
@@ -99,4 +103,4 @@ public:
 
 }
 
-#endif //CYCLOPS_OBJ_FILE_LOADER_H
+#endif //CYCLOPS_WAVEFRONT_OBJ_FILE_H

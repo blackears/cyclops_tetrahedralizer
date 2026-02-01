@@ -97,7 +97,7 @@ public:
 
 class CyclopsTetrahedralizer {
     std::vector<Vector3> tess_points;
-    std::vector<Tetrahedron> tetrahedrons;
+    std::vector<Tetrahedron> tetrahedra;
 
 private:
     void create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points);
@@ -105,7 +105,31 @@ private:
 public:
     const std::vector<Vector3>& get_points() const { return tess_points; }
     std::vector<Vector3>& get_points() { return tess_points; }
-    const std::vector<Tetrahedron>& get_tetrahedra() const { return tetrahedrons; }
+    const std::vector<Tetrahedron>& get_tetrahedra() const { return tetrahedra; }
+
+    int num_valid_tetrahedra() const {
+        int count = 0;
+        for (auto& tet : tetrahedra) {
+            if (tet.valid)
+                count++;
+        }
+        return count;
+    }
+
+    const void get_tetrahedra_as_tri_mesh_indices(std::vector<int>& out_tri_indices) const { 
+        out_tri_indices.resize(num_valid_tetrahedra() * 12);
+        int offset = 0;
+        for (const Tetrahedron& tet : tetrahedra) {
+            if (!tet.valid)
+                continue;
+
+            for (int i = 0; i < 4; ++i) {
+                out_tri_indices[offset++] = tet.vert_indices[Tetrahedron::face_vert_indices[i][0]];
+                out_tri_indices[offset++] = tet.vert_indices[Tetrahedron::face_vert_indices[i][2]];
+                out_tri_indices[offset++] = tet.vert_indices[Tetrahedron::face_vert_indices[i][3]];
+            }
+        }
+    }
 
     //@param points of triangles
     //@param indices of triangles (3 per triangle)
@@ -113,7 +137,10 @@ public:
     void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float resolution = 0);
 
     void get_mesh(std::vector<Vector3>& out_points, std::vector<int>& out_indices);
-};
+
+    void save_obj_file(const std::string& filename) const;
+
+    };
 
 }
 

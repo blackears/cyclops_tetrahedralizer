@@ -31,7 +31,7 @@
 
 using namespace CyclopsTetra3D;
 
-bool ObjFileLoader::load_obj_file(const std::string& filename) {
+bool WavefrontObjFile::load_obj_file(const std::string& filename) {
     points.clear();
     face_vertex_indices.clear();
     face_vertex_counts.clear();
@@ -112,7 +112,7 @@ bool ObjFileLoader::load_obj_file(const std::string& filename) {
 }
 
 
-void ObjFileLoader::save_obj_file(const std::string& filename, const std::vector<Vector3>& points) {
+void WavefrontObjFile::save_obj_file(const std::string& filename, const std::vector<Vector3>& points) {
     FILE* file = nullptr;
     errno_t err = fopen_s(&file, filename.c_str(), "w");
     if (file == nullptr) {
@@ -136,7 +136,7 @@ void ObjFileLoader::save_obj_file(const std::string& filename, const std::vector
 }
 
 
-void ObjFileLoader::triangularized_indices(std::vector<int>& new_face_vertex_indices) {
+void WavefrontObjFile::triangularized_indices(std::vector<int>& new_face_vertex_indices) {
 
     int face_vtx_cursor = 0;
     for (int face_size : face_vertex_counts) {

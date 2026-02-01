@@ -24,6 +24,7 @@
 #include "cyclops_tetrahedralizer.h"
 
 #include <random>
+#include <fstream>
 #include "bvh_tree3.h"
 
 using namespace CyclopsTetra3D;
@@ -187,21 +188,21 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     tess_points.push_back(btet_v3);
 
     //Create bounding tetrahedron - reverse winding
-    tetrahedrons.push_back(Tetrahedron::create_from_points(
+    tetrahedra.push_back(Tetrahedron::create_from_points(
         int(tess_points.size() - 4),
         int(tess_points.size() - 2),
         int(tess_points.size() - 3),
         int(tess_points.size() - 1),
         tess_points));
 
-    create_tetrahedrons_iter(tetrahedrons, tess_points);
+    create_tetrahedrons_iter(tetrahedra, tess_points);
 
     //Skip exterior removal for now
     return;
 
     //Remove exterior tetrahedrons
-    for (int i = 0; i < tetrahedrons.size(); i++) {
-        Tetrahedron& tet = tetrahedrons[i];
+    for (int i = 0; i < tetrahedra.size(); i++) {
+        Tetrahedron& tet = tetrahedra[i];
         if (tet.valid) {
             if (!bvh_tree.is_inside(tet.center, 1e-3))
             {
@@ -354,10 +355,10 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
 }
 
 void CyclopsTetrahedralizer::get_mesh(std::vector<Vector3>& out_points, std::vector<int>& out_indices) {
-    out_indices.resize(tetrahedrons.size() * 12);
+    out_indices.resize(tetrahedra.size() * 12);
 
     int count = 0;
-    for (Tetrahedron& tet : tetrahedrons) {
+    for (Tetrahedron& tet : tetrahedra) {
         for (int i = 0; i < 4; ++i) {
             out_indices[count++] = tet.get_vert_indices()[i];
             out_indices[count++] = tet.get_vert_indices()[i];
@@ -366,4 +367,52 @@ void CyclopsTetrahedralizer::get_mesh(std::vector<Vector3>& out_points, std::vec
 
         }
     }
+}
+
+void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {
+    std::ofstream file(filename);
+
+    file << "# Cyclops Tetrahedralizer" << std::endl;
+    file << "# https://github.com/blackears/cyclops_tetrahedralizer" << std::endl;
+    for (const auto& p : tess_points) {
+        file << "v " << p.x << " " << p.y << " " << p.z << std::endl;
+    }
+
+    for (auto& tet : tetrahedra) {
+        for (int i = 0; i < 4; ++i) {
+            const Vector3& n = tet.face_planes[i].normal;
+            file << "vn " << n.x << " " << n.y << " " << n.z << std::endl;
+        }
+    }
+
+    file << "vt 0 0" << std::endl;
+    file << "vt .5 0" << std::endl;
+    file << "vt .25 .5" << std::endl;
+    file << "vt .5 0" << std::endl;
+    file << "vt 1 0" << std::endl;
+    file << "vt .25 .5" << std::endl;
+    file << "vt 0 .5" << std::endl;
+    file << "vt .5 .5" << std::endl;
+    file << "vt .25 1" << std::endl;
+    file << "vt .5 .5" << std::endl;
+    file << "vt 1 .5" << std::endl;
+    file << "vt .25 1" << std::endl;
+
+
+    for (int tet_idx = 0; tet_idx < tetrahedra.size(); ++tet_idx) {
+        auto& tet = tetrahedra[tet_idx];
+        for (int j = 0; j < 4; ++j) {
+            file << "f";
+
+            for (int i = 0; i < 3; ++i) {
+                file << " " << tet.vert_indices[Tetrahedron::face_vert_indices[j][i]]
+                    << "/" << (j * 4 + i)
+                    << "/" << (tet_idx * 4 + j);
+            }
+
+            file << std::endl;
+        }
+    }
+
+    file.close();
 }
