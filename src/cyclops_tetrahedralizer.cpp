@@ -25,6 +25,7 @@
 
 #include <random>
 #include <fstream>
+#include <set>
 #include "bvh_tree3.h"
 
 using namespace CyclopsTetra3D;
@@ -367,6 +368,37 @@ void CyclopsTetrahedralizer::get_mesh(std::vector<Vector3>& out_points, std::vec
 
         }
     }
+}
+
+void CyclopsTetrahedralizer::save_obj_file_line_segments(const std::string& filename) const {
+    std::ofstream file(filename);
+
+    file << "# Cyclops Tetrahedralizer" << std::endl;
+    file << "# https://github.com/blackears/cyclops_tetrahedralizer" << std::endl;
+    for (const auto& p : tess_points) {
+        file << "v " << p.x << " " << p.y << " " << p.z << std::endl;
+    }
+
+    std::set<Vector2> used_edges;
+    int tet_count = 0;
+    for (auto& tet : tetrahedra) {
+        if (!tet.valid)
+            continue;
+
+        for (int i = 0; i <= 2; ++i) {
+            for (int j = i + 1; j <= 3; ++j) {
+                int vi0 = tet.vert_indices[i];
+                int vi1 = tet.vert_indices[j];
+
+                if (used_edges.find(Vector2(vi0, vi1)) == used_edges.end() && used_edges.find(Vector2(vi1, vi0)) == used_edges.end()) {
+                    used_edges.insert(Vector2(vi0, vi1));
+                    file << "l " << vi0 << " " << vi1 << std::endl;
+                }
+            }
+        }
+    }
+
+    file.close();
 }
 
 void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {

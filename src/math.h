@@ -52,10 +52,11 @@ struct Vector2 {
     Vector2 min(const Vector2 rhs) const { return Vector2(std::min(x, rhs.x), std::min(y, rhs.y)); }
     Vector2 max(const Vector2 rhs) const { return Vector2(std::max(x, rhs.x), std::max(y, rhs.y)); }
 
-    Vector2 rot_CCW_90() { return Vector2(-y, x); }
-    Vector2 rot_CW_90() { return Vector2(y, -x); }
+    Vector2 rot_CCW_90() const { return Vector2(-y, x); }
+    Vector2 rot_CW_90() const { return Vector2(y, -x); }
+    Vector2 reverse() const { return Vector2(y, x); }
 
-    std::string to_string() { return "(" + std::to_string(x) + ", " + std::to_string(y) + ")"; }
+    std::string to_string() const { return "(" + std::to_string(x) + ", " + std::to_string(y) + ")"; }
 
     real operator[](int index) const {
         if (index == 0) return x;
@@ -112,26 +113,36 @@ struct Vector2 {
     }
 
 
-    Vector2& operator*=(Vector2 rhs) {
+    Vector2& operator*=(const Vector2& rhs) {
         this->x *= rhs.x;
         this->y *= rhs.y;
         return *this;
     }
 
-    friend Vector2 operator*(Vector2 lhs, Vector2 rhs) {
+    friend Vector2 operator*(Vector2 lhs, const Vector2& rhs) {
         lhs *= rhs;
         return lhs;
     }
 
-    Vector2& operator/=(Vector2 rhs) {
+    Vector2& operator/=(const Vector2& rhs) {
         this->x /= rhs.x;
         this->y /= rhs.y;
         return *this;
     }
 
-    friend Vector2 operator/(Vector2 lhs, Vector2 rhs) {
+    friend Vector2 operator/(Vector2 lhs, const Vector2& rhs) {
         lhs /= rhs;
         return lhs;
+    }
+
+    friend bool operator==(const Vector2& lhs, const Vector2& rhs) {
+        return lhs.x == rhs.x && lhs.y == rhs.y;
+    }
+
+    friend bool operator<(const Vector2& lhs, const Vector2& rhs) {
+        if (lhs.x != rhs.x)
+            return lhs.x < rhs.x;
+        return lhs.y < rhs.y;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Vector2& obj) {
@@ -245,28 +256,40 @@ struct Vector3 {
     }
 
 
-    Vector3& operator*=(Vector3 rhs) {
+    Vector3& operator*=(const Vector3& rhs) {
         this->x *= rhs.x;
         this->y *= rhs.y;
         this->z *= rhs.z;
         return *this;
     }
 
-    friend Vector3 operator*(Vector3 lhs, Vector3 rhs) {
+    friend Vector3 operator*(Vector3 lhs, const Vector3& rhs) {
         lhs *= rhs;
         return lhs;
     }
 
-    Vector3& operator/=(Vector3 rhs) {
+    Vector3& operator/=(const Vector3& rhs) {
         this->x /= rhs.x;
         this->y /= rhs.y;
         this->z /= rhs.z;
         return *this;
     }
 
-    friend Vector3 operator/(Vector3 lhs, Vector3 rhs) {
+    friend Vector3 operator/(Vector3 lhs, const Vector3& rhs) {
         lhs /= rhs;
         return lhs;
+    }
+
+    friend bool operator==(const Vector3& lhs, const Vector3& rhs) {
+        return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+    }
+
+    friend bool operator<(const Vector3& lhs, const Vector3& rhs) {
+        if (lhs.x != rhs.x)
+            return lhs.x < rhs.x;
+        if (lhs.y != rhs.y)
+            return lhs.y < rhs.y;
+        return lhs.z < rhs.z;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Vector3& obj) {

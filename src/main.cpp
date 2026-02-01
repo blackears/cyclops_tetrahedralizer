@@ -34,11 +34,33 @@ using namespace CyclopsTetra3D;
 
 #ifndef CYCLOPS_TESS_LIB
 
-bool parse_command_line(int argc, char** argv, std::map<std::string, std::string>& out_options, std::string& out_source_file)
+bool show_help = false;
+bool export_edges = false;
+std::string output_file;
+
+void process_option(std::string option, int argc, char** argv, int& option_ptr) {
+	if (option == "h" || option == "help") {
+		show_help = true;
+		return;
+	}
+
+	if (option == "e" || option == "edges") {
+		export_edges = true;
+		return;
+	}
+
+	if (option == "o" || option == "out") {
+		output_file = argv[option_ptr++];
+		return;
+	}
+}
+
+
+bool parse_command_line(int argc, char** argv, std::string& out_source_file)
 {
 	bool specified_source_file = false;
 
-	for (int i = 1; i < argc; ++i)
+	for (int i = 1; i < argc;)
 	{
 		std::string arg = argv[i];
 		if (arg[0] == '-')
@@ -50,21 +72,15 @@ bool parse_command_line(int argc, char** argv, std::map<std::string, std::string
 			else {
 				option_name = arg.substr(1);
 			}
+			i++;
 
-			std::string option_value;
-			if ((i + 1) < argc && argv[i + 1][0] != '-')
-			{
-				option_value = argv[i + 1];
-				++i;
-				out_options[option_name] = option_value;
-			}
-
-			out_options[option_name] = option_value;
+			process_option(option_name, argc, argv, i);
 		}
 		else
 		{
 			out_source_file = arg;
 			specified_source_file = true;
+			i++;
 		}
 	}
 
@@ -85,8 +101,9 @@ void print_help(bool full = false) {
 
 	if (full) {
 		cout << endl;
-		cout << "\t-o, --out       output .obj file that will be written" << endl;
-		cout << "\t-h, --help      help message" << endl;
+		cout << "\t-h, --help             help message" << endl;
+		cout << "\t-o, --out <filename>   output .obj file that will be written" << endl;
+		cout << "\t-e, --edges            export edges instead of faces" << endl;
 	}
 	else {
 		cout << endl;
@@ -96,28 +113,22 @@ void print_help(bool full = false) {
 
 int main(int argc, char **argv)
 {
-	std::map<std::string, std::string> options;
+	//std::map<std::string, std::string> options;
 	std::string source_file;
 
-	if (!parse_command_line(argc, argv, options, source_file))
+	if (!parse_command_line(argc, argv, source_file))
 	{
 		print_help();
 		return 1;
 	}
 
-	if (options.find("h") != options.end() || options.find("help") != options.end()) {
+	if (show_help) {
 		print_help(true);
 		return 0;
 	}
 
-	std::string output_file;
-	if (options.find("o") != options.end()) {
-		output_file = options["o"];
-	}
-	else if (options.find("out") != options.end()) {
-		output_file = options["out"];
-	}
-	else {
+	//std::string output_file;
+	if (output_file.empty()) {
 		int dot_idx = source_file.find_last_of(".");
 		if (dot_idx == std::string::npos)
 			output_file = source_file + "_tetra.obj";
@@ -151,7 +162,10 @@ int main(int argc, char **argv)
 
 
 
-	tetralizer.save_obj_file(output_file);
+	if (export_edges)
+		tetralizer.save_obj_file_line_segments(output_file);
+	else
+		tetralizer.save_obj_file(output_file);
 
 	cout << "Writing tetrahedralization: " << output_file << endl;
 	return 0;
