@@ -198,9 +198,6 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
     create_tetrahedrons_iter(tetrahedra, tess_points);
 
-    //Skip exterior removal for now
-    return;
-
     //Remove exterior tetrahedrons
     for (int i = 0; i < tetrahedra.size(); i++) {
         Tetrahedron& tet = tetrahedra[i];
@@ -249,8 +246,6 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
         }
 
         //Find tetrahedra with circumspheres containing point
-//        bad_tet_candidates.push_back(tet_idx);
-
         Tetrahedron& tet = tetrahedrons[tet_idx];
         tet.valid = false;
 
