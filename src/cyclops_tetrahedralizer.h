@@ -42,6 +42,7 @@ class Tetrahedron {
         } };
 
 private:
+    bool valid;
     std::array<int, 4> vert_indices;
     std::array<int, 4> neighbors;
 
@@ -51,7 +52,6 @@ private:
 
     std::array<Plane, 4> face_planes;
 
-    bool valid;
 public:
 
     static Tetrahedron create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points);

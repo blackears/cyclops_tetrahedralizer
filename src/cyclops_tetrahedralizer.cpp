@@ -379,6 +379,9 @@ void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {
     }
 
     for (auto& tet : tetrahedra) {
+        if (!tet.valid)
+            continue;
+
         for (int i = 0; i < 4; ++i) {
             const Vector3& n = tet.face_planes[i].normal;
             file << "vn " << n.x << " " << n.y << " " << n.z << std::endl;
@@ -398,20 +401,24 @@ void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {
     file << "vt 1 .5" << std::endl;
     file << "vt .25 1" << std::endl;
 
+    int tet_count = 0;
+    for (auto& tet : tetrahedra) {
+        if (!tet.valid)
+            continue;
 
-    for (int tet_idx = 0; tet_idx < tetrahedra.size(); ++tet_idx) {
-        auto& tet = tetrahedra[tet_idx];
         for (int j = 0; j < 4; ++j) {
             file << "f";
 
             for (int i = 0; i < 3; ++i) {
                 file << " " << tet.vert_indices[Tetrahedron::face_vert_indices[j][i]]
-                    << "/" << (j * 4 + i)
-                    << "/" << (tet_idx * 4 + j);
+                    << "/" << (j * 3 + i)
+                    << "/" << (tet_count * 4 + j);
             }
 
             file << std::endl;
         }
+
+        tet_count++;
     }
 
     file.close();

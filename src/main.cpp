@@ -150,6 +150,7 @@ int main(int argc, char **argv)
 	//WavefrontObjFile result(tetralizer.get_points(), tri_mesh_vert_indices, tri_mesh_face_vert_counts);
 
 
+
 	tetralizer.save_obj_file(output_file);
 
 	cout << "Writing tetrahedralization: " << output_file << endl;
