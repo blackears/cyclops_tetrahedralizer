@@ -138,8 +138,8 @@ public:
 
     void get_mesh(std::vector<Vector3>& out_points, std::vector<int>& out_indices);
 
-    void save_obj_file(const std::string& filename) const;
-    void save_obj_file_line_segments(const std::string& filename) const;
+    void save_file_obj(const std::string& filename) const;
+    void save_file_line_segments_obj(const std::string& filename) const;
 
     };
 

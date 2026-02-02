@@ -368,7 +368,7 @@ void CyclopsTetrahedralizer::get_mesh(std::vector<Vector3>& out_points, std::vec
     }
 }
 
-void CyclopsTetrahedralizer::save_obj_file_line_segments(const std::string& filename) const {
+void CyclopsTetrahedralizer::save_file_line_segments_obj(const std::string& filename) const {
     std::ofstream file(filename);
 
     file << "# Cyclops Tetrahedralizer" << std::endl;
@@ -400,24 +400,15 @@ void CyclopsTetrahedralizer::save_obj_file_line_segments(const std::string& file
     file.close();
 }
 
-void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {
+void CyclopsTetrahedralizer::save_file_obj(const std::string& filename) const {
     std::ofstream file(filename);
 
     file << "# Cyclops Tetrahedralizer" << std::endl;
     file << "# https://github.com/blackears/cyclops_tetrahedralizer" << std::endl;
+
     int p_idx = 0;
     for (const auto& p : tess_points) {
         file << "v " << p.x << " " << p.y << " " << p.z << " \t#" << p_idx++ + 1 << std::endl;
-    }
-
-    for (auto& tet : tetrahedra) {
-        if (!tet.valid)
-            continue;
-
-        for (int i = 0; i < 4; ++i) {
-            const Vector3& n = tet.face_planes[i].normal;
-            file << "vn " << n.x << " " << n.y << " " << n.z << std::endl;
-        }
     }
 
     file << "vt 0 0" << std::endl;
@@ -433,25 +424,76 @@ void CyclopsTetrahedralizer::save_obj_file(const std::string& filename) const {
     file << "vt 1 .5" << std::endl;
     file << "vt .25 1" << std::endl;
 
-    int tet_count = 0;
-    for (auto& tet : tetrahedra) {
+    for (int tet_idx = 0; tet_idx < tetrahedra.size(); ++tet_idx) {
+        const Tetrahedron& tet = tetrahedra[tet_idx];
         if (!tet.valid)
             continue;
 
-        for (int j = 0; j < 4; ++j) {
-            file << "f";
+        file << "o tet_" << tet_idx << std::endl;
 
-            for (int i = 0; i < 3; ++i) {
-                file << " " << tet.vert_indices[Tetrahedron::face_vert_indices[j][i]] + 1
-                    << "/" << (j * 3 + i) + 1
-                    << "/" << (tet_count * 4 + j) + 1;
-            }
+        const std::array<int, 4> vi = tet.get_vert_indices();
 
-            file << std::endl;
-        }
-
-        tet_count++;
+        file << "f " << vi[0] + 1 << "/1 " << vi[1] + 1 << "/2 " << vi[2] + 1 << "/3" << std::endl;
+        file << "f " << vi[1] + 1 << "/4 " << vi[0] + 1 << "/5 " << vi[3] + 1 << "/6" << std::endl;
+        file << "f " << vi[2] + 1 << "/7 " << vi[3] + 1 << "/8 " << vi[0] + 1 << "/9" << std::endl;
+        file << "f " << vi[3] + 1 << "/10 " << vi[2] + 1 << "/11 " << vi[1] + 1 << "/12" << std::endl;
     }
 
     file.close();
 }
+
+//void CyclopsTetrahedralizer::save_file_obj(const std::string& filename) const {
+//    std::ofstream file(filename);
+//
+//    file << "# Cyclops Tetrahedralizer" << std::endl;
+//    file << "# https://github.com/blackears/cyclops_tetrahedralizer" << std::endl;
+//    int p_idx = 0;
+//    for (const auto& p : tess_points) {
+//        file << "v " << p.x << " " << p.y << " " << p.z << " \t#" << p_idx++ + 1 << std::endl;
+//    }
+//
+//    for (auto& tet : tetrahedra) {
+//        if (!tet.valid)
+//            continue;
+//
+//        for (int i = 0; i < 4; ++i) {
+//            const Vector3& n = tet.face_planes[i].normal;
+//            file << "vn " << n.x << " " << n.y << " " << n.z << std::endl;
+//        }
+//    }
+//
+//    file << "vt 0 0" << std::endl;
+//    file << "vt .5 0" << std::endl;
+//    file << "vt .25 .5" << std::endl;
+//    file << "vt .5 0" << std::endl;
+//    file << "vt 1 0" << std::endl;
+//    file << "vt .25 .5" << std::endl;
+//    file << "vt 0 .5" << std::endl;
+//    file << "vt .5 .5" << std::endl;
+//    file << "vt .25 1" << std::endl;
+//    file << "vt .5 .5" << std::endl;
+//    file << "vt 1 .5" << std::endl;
+//    file << "vt .25 1" << std::endl;
+//
+//    int tet_count = 0;
+//    for (auto& tet : tetrahedra) {
+//        if (!tet.valid)
+//            continue;
+//
+//        for (int j = 0; j < 4; ++j) {
+//            file << "f";
+//
+//            for (int i = 0; i < 3; ++i) {
+//                file << " " << tet.vert_indices[Tetrahedron::face_vert_indices[j][i]] + 1
+//                    << "/" << (j * 3 + i) + 1
+//                    << "/" << (tet_count * 4 + j) + 1;
+//            }
+//
+//            file << std::endl;
+//        }
+//
+//        tet_count++;
+//    }
+//
+//    file.close();
+//}

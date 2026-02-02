@@ -37,6 +37,7 @@ using namespace CyclopsTetra3D;
 bool show_help = false;
 bool export_edges = false;
 std::string output_file;
+//std::string output_format = "obj";
 
 void process_option(std::string option, int argc, char** argv, int& option_ptr) {
 	if (option == "h" || option == "help") {
@@ -48,6 +49,11 @@ void process_option(std::string option, int argc, char** argv, int& option_ptr) 
 		export_edges = true;
 		return;
 	}
+
+	//if (option == "f" || option == "format") {
+	//	output_format = argv[option_ptr++];
+	//	return;
+	//}
 
 	if (option == "o" || option == "out") {
 		output_file = argv[option_ptr++];
@@ -103,6 +109,7 @@ void print_help(bool full = false) {
 		cout << endl;
 		cout << "\t-h, --help             help message" << endl;
 		cout << "\t-o, --out <filename>   output .obj file that will be written" << endl;
+//		cout << "\t-f, --format <type>    output format ['obj', 'gltf']" << endl;
 		cout << "\t-e, --edges            export edges instead of faces" << endl;
 	}
 	else {
@@ -163,9 +170,9 @@ int main(int argc, char **argv)
 
 
 	if (export_edges)
-		tetralizer.save_obj_file_line_segments(output_file);
+		tetralizer.save_file_line_segments_obj(output_file);
 	else
-		tetralizer.save_obj_file(output_file);
+		tetralizer.save_file_obj(output_file);
 
 	cout << "Writing tetrahedralization: " << output_file << endl;
 	return 0;
