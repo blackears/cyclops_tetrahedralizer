@@ -183,9 +183,8 @@ public:
     void build_from_triangles(const std::vector<Vector3>& points, const std::vector<int>& indices);
 
     void ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, std::vector<BVHTreeHitResult3>& out_results) const;
-    bool ray_cast_old(const Vector3& ray_origin, const Vector3& ray_direction, Vector3& out_hit_pos, Vector3& out_hit_normal, int& out_index) const;
 
-    bool is_inside(const Vector3& p, real dist_min = 0.0) const;
+    bool is_inside(const Vector3& p) const;
 
 };
 
