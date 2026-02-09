@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 	//std::fill(tri_mesh_face_vert_counts.begin(), tri_mesh_face_vert_counts.end(), 3);
 	//WavefrontObjFile result(tetralizer.get_points(), tri_mesh_vert_indices, tri_mesh_face_vert_counts);
 
-
+	cout << "tessellation done" << std::endl;
 
 	if (export_edges)
 		tetralizer.save_file_line_segments_obj(output_file);

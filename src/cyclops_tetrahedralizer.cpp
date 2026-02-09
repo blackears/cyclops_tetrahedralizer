@@ -229,6 +229,14 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
     create_tetrahedrons_iter(tess_points);
 
+
+    ////////////////
+//    bool inside = bvh_tree.is_inside(Vector3(0, .216, 0), 1e-3);
+    bool inside = bvh_tree.is_inside(tetrahedra[13394].center, 1e-3);
+    int j = 9;
+    bool inside2 = bvh_tree.is_inside(tetrahedra[13394].center, 1e-3);
+    ////////////////
+
     //Remove exterior tetrahedrons
     for (int i = 0; i < tetrahedra.size(); i++) {
         Tetrahedron& tet = tetrahedra[i];

@@ -366,11 +366,12 @@ struct BoundingBox {
         return bb_max - bb_min;
     }
 
-    bool intersects_ray(const Vector3& ray_origin, const Vector3& ray_direction) const {
+    bool intersects_ray(const Vector3& ray_origin, const Vector3& ray_direction, real epsilon = 1e-4) const {
+        Vector3 eps_vec(epsilon, epsilon, epsilon);
         //Slab method
         //https://en.wikipedia.org/wiki/Slab_method
-        Vector3 t_low = (bb_min - ray_origin) / ray_direction;
-        Vector3 t_high = (bb_max - ray_origin) / ray_direction;
+        Vector3 t_low = (bb_min - eps_vec - ray_origin) / ray_direction;
+        Vector3 t_high = (bb_max + eps_vec - ray_origin) / ray_direction;
         Vector3 t_close = t_low.min(t_high);
         Vector3 t_far = t_low.max(t_high);
 

@@ -36,12 +36,14 @@ struct BVHTreeTriangle3 {
     Vector3 p0;
     Vector3 p1;
     Vector3 p2; 
+    Vector3 normal;
     Vector3 centroid;
     BoundingBox bounds;
 
     BVHTreeTriangle3(const Vector3& p0, const Vector3& p1, const Vector3& p2)
         : p0(p0), p1(p1), p2(p2),
         bounds(BoundingBox(p0.min(p1).min(p2), p0.max(p1).max(p2))),
+        normal((p1 - p0).cross(p2 - p0).normalized()),
         centroid((p0 + p1 + p2) / 3.0) {}
     
     bool intersect_ray(const Vector3& ray_origin, const Vector3& ray_direction, Vector3 &out_hit_pos, Vector3 &out_hit_normal) const {
@@ -76,6 +78,20 @@ struct BVHTreeTriangle3 {
     }
 };
 
+struct BVHTreeHitResult3 {
+    Vector3 hit_pos;
+    Vector3 hit_normal;
+    int out_index;
+    real distance;
+
+    BVHTreeHitResult3(Vector3 hit_pos, Vector3 hit_normal, int out_index, real distance) :
+        hit_pos(hit_pos),
+        hit_normal(hit_normal),
+        out_index(out_index),
+        distance(distance)
+        {}
+};
+
 struct BVHTreeNode3 {
     BoundingBox bounds;
 
@@ -100,9 +116,38 @@ struct BVHTreeNode3 {
         }
     }
 
-    bool ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, 
+    void ray_cast(const Vector3& ray_origin, const Vector3& ray_direction,
         const std::vector<BVHTreeTriangle3>& triangles, const std::vector<BVHTreeNode3>& nodes,
-        Vector3 &out_hit_pos, Vector3 &out_hit_normal, int &out_index) const {
+        std::vector<BVHTreeHitResult3>& out_results) const {
+
+        if (!bounds.intersects_ray(ray_origin, ray_direction))
+            return;
+
+        if (is_leaf()) {
+            for (unsigned int i = 0; i < num_triangles; i++) {
+                Vector3 out_hit_pos;
+                Vector3 out_hit_normal;
+                int out_index;
+
+                if (triangles[first_triangle_offset + i].intersect_ray(ray_origin, ray_direction, out_hit_pos, out_hit_normal)) {
+                    out_results.push_back(BVHTreeHitResult3(
+                        out_hit_pos,
+                        out_hit_normal,
+                        first_triangle_offset + i,
+                        (ray_origin - out_hit_pos).magnitude()
+                    ));
+                }
+            }
+        }
+        else {
+            nodes[child_left_idx].ray_cast(ray_origin, ray_direction, triangles, nodes, out_results);
+            nodes[child_left_idx + 1].ray_cast(ray_origin, ray_direction, triangles, nodes, out_results);
+        }
+    }
+
+    bool ray_cast_old(const Vector3& ray_origin, const Vector3& ray_direction,
+        const std::vector<BVHTreeTriangle3>& triangles, const std::vector<BVHTreeNode3>& nodes,
+        Vector3& out_hit_pos, Vector3& out_hit_normal, int& out_index) const {
 
         if (!bounds.intersects_ray(ray_origin, ray_direction))
             return false;
@@ -115,9 +160,10 @@ struct BVHTreeNode3 {
                 }
             }
             return false;
-        } else {
-            return nodes[child_left_idx].ray_cast(ray_origin, ray_direction, triangles, nodes, out_hit_pos, out_hit_normal, out_index) ||
-                nodes[child_left_idx + 1].ray_cast(ray_origin, ray_direction, triangles, nodes, out_hit_pos, out_hit_normal, out_index);
+        }
+        else {
+            return nodes[child_left_idx].ray_cast_old(ray_origin, ray_direction, triangles, nodes, out_hit_pos, out_hit_normal, out_index) ||
+                nodes[child_left_idx + 1].ray_cast_old(ray_origin, ray_direction, triangles, nodes, out_hit_pos, out_hit_normal, out_index);
         }
     }
 
@@ -136,7 +182,8 @@ public:
     //@param indices of triangles (3 per triangle)
     void build_from_triangles(const std::vector<Vector3>& points, const std::vector<int>& indices);
 
-    bool ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, Vector3 &out_hit_pos, Vector3 &out_hit_normal, int &out_index) const;
+    void ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, std::vector<BVHTreeHitResult3>& out_results) const;
+    bool ray_cast_old(const Vector3& ray_origin, const Vector3& ray_direction, Vector3& out_hit_pos, Vector3& out_hit_normal, int& out_index) const;
 
     bool is_inside(const Vector3& p, real dist_min = 0.0) const;
 

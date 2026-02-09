@@ -127,29 +127,56 @@ bool BVHTree3::is_inside(const Vector3& p, real dist_min) const {
     int num_inside = 0;
 
     for (int i = 0; i < 6; i++) {
-        Vector3 hit_pos;
-        Vector3 hit_normal;
-        int hit_index;
+        //Vector3 hit_pos;
+        //Vector3 hit_normal;
+        //int hit_index;
 
-        nodes[0].ray_cast(p, face_check_dirs[i], triangles, nodes, hit_pos, hit_normal, hit_index);
-        real hit_distance = (hit_pos - p).magnitude();
-        //Check hit is valid
-        if (hit_index >= 0) {
-            if (hit_normal.dot(face_check_dirs[i]) > 0) {
-                num_inside++;
-            }
+        std::vector<BVHTreeHitResult3> hits;
+        nodes[0].ray_cast(p, face_check_dirs[i], triangles, nodes, hits);
 
-            if (dist_min > 0.0 && hit_distance < dist_min) {
-                //If hit outside face, we are outside
-                return false;
-            }
+        if (hits.empty())
+            return false;
+
+        std::sort(hits.begin(), hits.end(),
+            [](const BVHTreeHitResult3& a, const BVHTreeHitResult3& b) { return a.distance < b.distance; });
+
+        const BVHTreeHitResult3& result = hits[0];
+        const BVHTreeTriangle3& tri = triangles[result.out_index];
+
+        //if (tri.normal.dot(face_check_dirs[i]) > 0) {
+        //    num_inside++;
+        //}
+        if (tri.normal.dot(face_check_dirs[i]) < 0) {
+            return false;
         }
+
+
+        //real hit_distance = (hit_pos - p).magnitude();
+        ////Check hit is valid
+
+        //if (hit_index >= 0) {
+        //    const BVHTreeTriangle3& tri = triangles[hit_index];
+
+        //    if (tri.normal.dot(face_check_dirs[i]) > 0) {
+        //        num_inside++;
+        //    }
+
+        //    if (dist_min > 0.0 && hit_distance < dist_min) {
+        //        //If hit outside face, we are outside
+        //        return false;
+        //    }
+        //}
     }
 
-    return num_inside >= 3;
+//    return num_inside >= 3;
+    return true;
 }
 
-bool BVHTree3::ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, Vector3 &hit_pos, Vector3 &hit_normal, int &out_index) const {
-    return nodes[0].ray_cast(ray_origin, ray_direction, triangles, nodes, hit_pos, hit_normal, out_index);
+void BVHTree3::ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, std::vector<BVHTreeHitResult3>& out_results) const {
+    nodes[0].ray_cast(ray_origin, ray_direction, triangles, nodes, out_results);
+}
+
+bool BVHTree3::ray_cast_old(const Vector3& ray_origin, const Vector3& ray_direction, Vector3& hit_pos, Vector3& hit_normal, int& out_index) const {
+    return nodes[0].ray_cast_old(ray_origin, ray_direction, triangles, nodes, hit_pos, hit_normal, out_index);
 }
 
