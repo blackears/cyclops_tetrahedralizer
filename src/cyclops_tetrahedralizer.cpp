@@ -244,11 +244,11 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
 void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>& points) {
     //Last 4 points are bounding tetrahedron
-    for (int i = 0; i < points.size() - 4; i++) {
+    for (int p_idx = 0; p_idx < points.size() - 4; p_idx++) {
         //if (i >= 5)
         //    break;
 
-        Vector3 p = points[i];
+        Vector3 p = points[p_idx];
 
         int tet_idx = 0;
 
@@ -333,7 +333,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
                 int vi_0 = cur_tet.vert_indices[Tetrahedron::face_vert_indices[boundary_face_idx][0]];
                 int vi_1 = cur_tet.vert_indices[Tetrahedron::face_vert_indices[boundary_face_idx][1]];
                 int vi_2 = cur_tet.vert_indices[Tetrahedron::face_vert_indices[boundary_face_idx][2]];
-                int vi_3 = i;
+                int vi_3 = p_idx;
 
                 //Tetrahedron new_tet;
                 //new_tet.create_from_points(vi_0, vi_1, vi_2, vi_3, tess_points);
@@ -345,12 +345,12 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
                 const Vector3& p3 = tess_points[vi_3];
 
                 real volume_x2 = Math::det(p0 - p3, p1 - p3, p2 - p3);
-                if (volume_x2 > 0) {
+                if (volume_x2 <= 0) {
                     tets_violating.emplace(cur_tet_idx);
                 }
             }
 
-            if (tets_violating.size() == tets_to_replace.size())
+            if (tets_violating.size() == 0)
                 break;
 
             //Negative volumes indicate a concavity
@@ -359,7 +359,8 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
                     [&](int x) { return tets_violating.count(x) > 0; }
                 ), tets_to_replace.end());
 
-            //std::swap(tets_to_replace, tets_validated);
+            //save_file_obj("reversed_volumes.obj");
+            
         }
 
         //Mark invalid
@@ -378,7 +379,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
             int vi_0 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][0]];
             int vi_1 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][1]];
             int vi_2 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][2]];
-            int vi_3 = i;
+            int vi_3 = p_idx;
 
             int new_tet_idx = tetrahedra.size();
             tets_added.push_back(new_tet_idx);
