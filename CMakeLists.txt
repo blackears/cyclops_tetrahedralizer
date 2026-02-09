@@ -13,6 +13,11 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
+if ( UNIX )
+set( CMAKE_CXX_FLAGS_DEBUG_INIT "-fstack-protector" )
+elseif( WIN32 )
+set( CMAKE_CXX_FLAGS_DEBUG_INIT "/GS" )
+endif()
 
 # Set the C++ standard globally
 set(CMAKE_CXX_STANDARD 17)

@@ -26,6 +26,7 @@
 #include <random>
 #include <fstream>
 #include <set>
+#include <cassert>
 #include "bvh_tree3.h"
 
 using namespace CyclopsTetra3D;
@@ -43,21 +44,21 @@ Tetrahedron Tetrahedron::create_from_points(int v0_idx, int v1_idx, int v2_idx, 
     tet.neighbors[2] = -1;
     tet.neighbors[3] = -1;
 
-    tet.circumcenter = Math::tetrahedron_circumcenter(points[v0_idx], points[v1_idx], points[v2_idx], points[v3_idx]);
-    tet.circumcircle_radius_squared = (tet.circumcenter - points[v0_idx]).magnitude_squared();
-    tet.center = (points[v0_idx] + points[v1_idx] + points[v2_idx] + points[v3_idx]) / 4.0;
-
     Vector3 p0 = points[v0_idx];
     Vector3 p1 = points[v1_idx];
     Vector3 p2 = points[v2_idx];
     Vector3 p3 = points[v3_idx];
 
-    Plane test_plane = Plane::create(p0, p1, p2);
-    if (test_plane.distance_to_plane(p3) > 0.0) {
-        //Swap two vertices to change winding
-        tet.vert_indices[0] = v1_idx;
-        tet.vert_indices[1] = v0_idx;
-    }
+    tet.circumcenter = Math::tetrahedron_circumcenter(p0, p1, p2, p3);
+    tet.circumsphere_radius_squared = (tet.circumcenter - p0).magnitude_squared();
+    tet.center = (p0 + p1 + p2 + p3) / 4.0;
+
+    //Plane test_plane = Plane::create(p0, p1, p2);
+    //if (test_plane.distance_to_plane(p3) > 0.0) {
+    //    //Swap two vertices to change winding
+    //    tet.vert_indices[0] = v1_idx;
+    //    tet.vert_indices[1] = v0_idx;
+    //}
 
     //Should all be facing outside
     for (int i = 0; i < 4; i++) {
@@ -75,7 +76,7 @@ bool Tetrahedron::contains_point(const Vector3& p, const std::vector<Vector3>& p
     return Math::tetrahedron_contains_point(p, points[vert_indices[0]], points[vert_indices[1]], points[vert_indices[2]], points[vert_indices[3]]);
 }
 
-int Tetrahedron::find_adjacent_tetrahedron(const Vector3& dir, const std::vector<Vector3>& points) const {
+int Tetrahedron::find_adjacent_tetrahedron(const Vector3& dir) const {
     real best_dist = std::numeric_limits<real>::infinity();
     int best_face = -1;
     for (int i = 0; i < 4; i++) {
@@ -89,6 +90,35 @@ int Tetrahedron::find_adjacent_tetrahedron(const Vector3& dir, const std::vector
             }
         }
     }
+
+    if (best_face == -1)
+        return -1;
+
+    return neighbors[best_face];
+}
+
+int Tetrahedron::step_toward_point_adjacent_tetrahedron(const Vector3& p) const {
+    Vector3 dir = p - center;
+
+    real best_dist_sq = std::numeric_limits<real>::infinity();
+    int best_face = -1;
+    for (int i = 0; i < 4; i++) {
+        Vector3 f_intersect;
+        if (face_planes[i].intersect_ray(center, dir, f_intersect)) {
+            Vector3 offset = (f_intersect - center);
+            if (offset.dot(dir) <= 0.0)
+                continue;
+
+            real dist_sq = offset.magnitude_squared();
+            if (dist_sq < best_dist_sq) {
+                best_dist_sq = dist_sq;
+                best_face = i;
+            }
+        }
+    }
+
+    if (best_face == -1 || best_dist_sq > dir.magnitude_squared())
+        return -1;
 
     return neighbors[best_face];
 }
@@ -133,6 +163,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     //Add jitter to points to avoid degenerate cases
     std::random_device r;
     std::default_random_engine rng_eng(r());
+    rng_eng.seed(0);
     std::uniform_real_distribution<real> rand_eps(-1e-5, 1e-5);
 
     for (const Vector3& p : points) {
@@ -196,7 +227,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
         int(tess_points.size() - 1),
         tess_points));
 
-    create_tetrahedrons_iter(tetrahedra, tess_points);
+    create_tetrahedrons_iter(tess_points);
 
     //Remove exterior tetrahedrons
     for (int i = 0; i < tetrahedra.size(); i++) {
@@ -211,7 +242,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
 }
 
-void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points) {
+void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>& points) {
     //Last 4 points are bounding tetrahedron
     for (int i = 0; i < points.size() - 4; i++) {
         //if (i >= 5)
@@ -223,7 +254,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
 
         //Skip forward to first valid tetrahedron
         while (tet_idx != -1) {
-            Tetrahedron& tri = tetrahedrons[tet_idx];
+            Tetrahedron& tri = tetrahedra[tet_idx];
             if (tri.valid)
                 break;
 
@@ -232,12 +263,12 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
 
         //Walk toward containing tetrahedron
         while (tet_idx != -1) {
-            Tetrahedron& tet = tetrahedrons[tet_idx];
-            if (tet.contains_point(p, points)) {
+            Tetrahedron& tet = tetrahedra[tet_idx];
+            int next_tet_idx = tet.step_toward_point_adjacent_tetrahedron(p);
+            if (next_tet_idx == -1)
                 break;
-            }
 
-            tet_idx = tet.find_adjacent_tetrahedron(p - tet.center, points);
+            tet_idx = next_tet_idx;
         }
 
         if (tet_idx == -1) {
@@ -245,8 +276,165 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
             continue;
         }
 
+        //Find tets which have circumcenters that include point
+        std::vector<int> tets_to_scan;
+        std::vector<int> tets_to_replace;
+        std::set<int> tets_viewed;
+        tets_to_scan.push_back(tet_idx);
+        tets_to_replace.push_back(tet_idx);
+        tets_viewed.emplace(tet_idx);
+
+        while (!tets_to_scan.empty()) {
+            int cur_tet_idx = tets_to_scan.back();
+            Tetrahedron& current_tet = tetrahedra[cur_tet_idx];
+            tets_to_scan.pop_back();
+
+            for (int i = 0; i < 4; ++i) {
+                int neighbor_tet_idx = current_tet.neighbors[i];
+                
+                if (neighbor_tet_idx == -1 || tets_viewed.find(neighbor_tet_idx) != tets_viewed.end())
+                    continue;
+
+                tets_viewed.emplace(neighbor_tet_idx);
+                
+                Tetrahedron& neighbor_tet = tetrahedra[neighbor_tet_idx];
+                if ((neighbor_tet.circumcenter - p).magnitude_squared() < neighbor_tet.circumsphere_radius_squared) {
+                    tets_to_replace.push_back(neighbor_tet_idx);
+                    tets_to_scan.push_back(neighbor_tet_idx);
+                }
+            }
+        }
+
+        std::vector<std::tuple<int, int>> boundary_faces;
+        while (true) {
+            //Find cavity bounds
+            boundary_faces.clear();
+            for (int cur_tet_idx : tets_to_replace) {
+                Tetrahedron& current_tet = tetrahedra[cur_tet_idx];
+
+                for (int i = 0; i < 4; ++i) {
+                    int neighbor_tet_idx = current_tet.neighbors[i];
+
+                    if (neighbor_tet_idx == -1 || std::find(tets_to_replace.begin(), tets_to_replace.end(), neighbor_tet_idx) == tets_to_replace.end()) {
+                        boundary_faces.push_back(std::tuple<int, int>(cur_tet_idx, i));
+                        //current_tet.neighbors[cur_tet_idx] = -1;
+                    }
+                }
+            }
+
+            //Boundary faces should be a convex shape, but due to round off errors may have concavity
+            //Remove tets that create a concave boundary
+            std::set<int> tets_violating;
+            for (auto [cur_tet_idx, boundary_face_idx] : boundary_faces) {
+                Tetrahedron& cur_tet = tetrahedra[cur_tet_idx];
+
+                int neighbor_tet_idx = cur_tet.neighbors[boundary_face_idx];
+
+                int vi_0 = cur_tet.vert_indices[Tetrahedron::face_vert_indices[boundary_face_idx][0]];
+                int vi_1 = cur_tet.vert_indices[Tetrahedron::face_vert_indices[boundary_face_idx][1]];
+                int vi_2 = cur_tet.vert_indices[Tetrahedron::face_vert_indices[boundary_face_idx][2]];
+                int vi_3 = i;
+
+                //Tetrahedron new_tet;
+                //new_tet.create_from_points(vi_0, vi_1, vi_2, vi_3, tess_points);
+                //real volume_x2 = new_tet.volume_times_2(tess_points);
+
+                const Vector3& p0 = tess_points[vi_0];
+                const Vector3& p1 = tess_points[vi_1];
+                const Vector3& p2 = tess_points[vi_2];
+                const Vector3& p3 = tess_points[vi_3];
+
+                real volume_x2 = Math::det(p0 - p3, p1 - p3, p2 - p3);
+                if (volume_x2 > 0) {
+                    tets_violating.emplace(cur_tet_idx);
+                }
+            }
+
+            if (tets_violating.size() == tets_to_replace.size())
+                break;
+
+            //Negative volumes indicate a concavity
+            //Remove all tets that had negative volume
+            tets_to_replace.erase(std::remove_if(tets_to_replace.begin(), tets_to_replace.end(),
+                    [&](int x) { return tets_violating.count(x) > 0; }
+                ), tets_to_replace.end());
+
+            //std::swap(tets_to_replace, tets_validated);
+        }
+
+        //Mark invalid
+        for (int tet_idx : tets_to_replace) {
+            Tetrahedron& current_tet = tetrahedra[tet_idx];
+            current_tet.valid = false;
+        }
+
+        //Add new tets
+        std::vector<int> tets_added;
+        for (auto [bad_tet_idx, bad_face_idx] : boundary_faces) {
+            Tetrahedron& bad_tet = tetrahedra[bad_tet_idx];
+
+            int neighbor_tet_idx = bad_tet.neighbors[bad_face_idx];
+
+            int vi_0 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][0]];
+            int vi_1 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][1]];
+            int vi_2 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][2]];
+            int vi_3 = i;
+
+            int new_tet_idx = tetrahedra.size();
+            tets_added.push_back(new_tet_idx);
+
+            //First face should match winding of outer face of cur_tet
+            tetrahedra.push_back(Tetrahedron::create_from_points(vi_0, vi_1, vi_2, vi_3, points));
+            Tetrahedron& new_tet = tetrahedra[new_tet_idx];
+
+            //Should have already filtered out tets with negative volume
+            assert(new_tet.volume_times_2(points) > 0);
+
+            if (neighbor_tet_idx != -1) {
+                Tetrahedron& neighbor_tet = tetrahedra[neighbor_tet_idx];
+
+                int neighbor_face_idx = neighbor_tet.find_face(vi_0, vi_2, vi_1);
+                neighbor_tet.neighbors[neighbor_face_idx] = new_tet_idx;
+                new_tet.neighbors[0] = neighbor_tet_idx;
+            }
+        }
+
+        //Set neighbors of added tets
+        for (int i = 0; i < tets_added.size() - 1; ++i) {
+            int tet_0_idx = tets_added[i];
+            Tetrahedron& tet_0 = tetrahedra[tet_0_idx];
+
+            for (int j = i + 1; j < tets_added.size(); ++j) {
+                int tet_1_idx = tets_added[j];
+                Tetrahedron& tet_1 = tetrahedra[tet_1_idx];
+
+                //Face 0 on all added tets faces boundary
+                for (int k = 1; k < 4; ++k) {
+                    int vi_0 = tet_0.vert_indices[Tetrahedron::face_vert_indices[k][0]];
+                    int vi_1 = tet_0.vert_indices[Tetrahedron::face_vert_indices[k][1]];
+                    int vi_2 = tet_0.vert_indices[Tetrahedron::face_vert_indices[k][2]];
+
+                    int neighbor_face = tet_1.find_face(vi_0, vi_2, vi_1);
+                    if (neighbor_face != -1) {
+                        tet_0.neighbors[k] = tet_1_idx;
+                        tet_1.neighbors[neighbor_face] = tet_0_idx;
+                        //Tets will only match on one face
+                        break;
+                    }
+                }
+            }
+        }
+
+
+
+        /////////////////////////
+
+
+        /*
+
+
         //Find tetrahedra with circumspheres containing point
-        Tetrahedron& tet = tetrahedrons[tet_idx];
+        Tetrahedron& tet = tetrahedra[tet_idx];
         tet.valid = false;
 
         std::vector<int> bad_tet_indices;
@@ -263,19 +451,19 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
             auto [current_tet_idx, face_idx] = bad_tet_candidates.back();
             bad_tet_candidates.pop_back();
 
-            Tetrahedron& current_tet = tetrahedrons[current_tet_idx];
+            Tetrahedron& current_tet = tetrahedra[current_tet_idx];
 
             int neighbor_idx = current_tet.neighbors[face_idx];
             if (neighbor_idx == -1) {
                 outer_faces.push_back(std::make_tuple(current_tet_idx, face_idx));
             }
             else {
-                Tetrahedron& neighbor_tet = tetrahedrons[neighbor_idx];
+                Tetrahedron& neighbor_tet = tetrahedra[neighbor_idx];
                 if (!neighbor_tet.valid) {
                     continue;
                 }
 
-                if (neighbor_tet.point_in_circumsphere(p, points)) {
+                if (neighbor_tet.point_in_circumsphere(p)) {
                     bad_tet_indices.push_back(neighbor_idx);
                     neighbor_tet.valid = false;
 
@@ -289,39 +477,52 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
             }
         }
 
+        std::cout << "--- Outer faces  " << i << " p " << p << std::endl;
+        dump_outer_faces(outer_faces);
+
         //Rebuild cavity with new tetrahedrons
         std::vector<int> new_tet_indices;
-        for (auto [bad_tet_idx, face_idx] : outer_faces) {
-            Tetrahedron& bad_tet = tetrahedrons[bad_tet_idx];
+        for (auto [bad_tet_idx, bad_face_idx] : outer_faces) {
+            Tetrahedron& bad_tet = tetrahedra[bad_tet_idx];
 
-            int neighbor_tet_idx = bad_tet.neighbors[face_idx];
+            int neighbor_tet_idx = bad_tet.neighbors[bad_face_idx];
 
-            int vert_indices[4];
-            //Reverse winding for adjacent tetrahedron
-            vert_indices[0] = bad_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][0]];
-            vert_indices[1] = bad_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][2]];
-            vert_indices[2] = bad_tet.vert_indices[Tetrahedron::face_vert_indices[face_idx][1]];
-            vert_indices[3] = i;
+            int vi_0 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][0]];
+            int vi_1 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][1]];
+            int vi_2 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][2]];
+            int vi_3 = i;
 
-            int new_tet_idx = tetrahedrons.size();
-            tetrahedrons.push_back(Tetrahedron::create_from_points(
-                vert_indices[0],
-                vert_indices[1],
-                vert_indices[2],
-                vert_indices[3],
-                points));
+            int new_tet_idx = tetrahedra.size();
 
-            Tetrahedron& new_tet = tetrahedrons[new_tet_idx];
+            //First face should match winding of outer face of bad_tet
+            tetrahedra.push_back(Tetrahedron::create_from_points(vi_0, vi_1, vi_2, vi_3, points));
+
+            Tetrahedron& new_tet = tetrahedra[new_tet_idx];
+
+            ///////////debug
+            //int neighbor_idx = bad_tet.neighbors[bad_face_idx];
+            //Tetrahedron* neighbor_tet = neighbor_idx == -1 ? nullptr : &(tetrahedra[neighbor_idx]);
+            real tet_volume2 = new_tet.volume_times_2(points);
+            real dist_to_circumcenter = (bad_tet.circumcenter - p).magnitude_squared();
+            real circumsphere_radius_squared = bad_tet.circumsphere_radius_squared;
+            real ds = dist_to_circumcenter - circumsphere_radius_squared;
+            if (tet_volume2 <= 0) {
+                real f = bad_tet.dist_to_circumsphere(p);
+                int g = 9;
+            }
+            assert(new_tet.volume_times_2(points) > 0);
 
             //Update neighbor links to exterior tetrahedrons
             new_tet.neighbors[0] = neighbor_tet_idx;
-            //Find face with same vertices with reverse winding
+            
+            //Find face with same vertices
             if (neighbor_tet_idx != -1) {
-                Tetrahedron& neighbor_tet = tetrahedrons[neighbor_tet_idx];
-                int face_idx = neighbor_tet.find_face(
-                    new_tet.vert_indices[Tetrahedron::face_vert_indices[0][0]], 
-                    new_tet.vert_indices[Tetrahedron::face_vert_indices[0][2]], 
-                    new_tet.vert_indices[Tetrahedron::face_vert_indices[0][1]]);
+                Tetrahedron& neighbor_tet = tetrahedra[neighbor_tet_idx];
+                int nvi_0 = new_tet.vert_indices[Tetrahedron::face_vert_indices[0][0]];
+                int nvi_1 = new_tet.vert_indices[Tetrahedron::face_vert_indices[0][1]];
+                int nvi_2 = new_tet.vert_indices[Tetrahedron::face_vert_indices[0][2]];
+                //Reverse winding
+                int face_idx = neighbor_tet.find_face(nvi_0, nvi_2, nvi_1);
 
                 neighbor_tet.neighbors[face_idx] = new_tet_idx;
             }
@@ -329,7 +530,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
             //Check other cavity filling tetrahedrons for shared faces
             for (int j = 0; j < new_tet_indices.size(); j++) {
                 int other_tet_idx = new_tet_indices[j];
-                Tetrahedron& other_tet = tetrahedrons[other_tet_idx];
+                Tetrahedron& other_tet = tetrahedra[other_tet_idx];
 
                 //Check for shared face
                 for (int face_idx = 1; face_idx < 4; face_idx++) {
@@ -349,6 +550,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(std::vector<Tetrahedron>& 
 
             new_tet_indices.push_back(new_tet_idx);
         }
+        */
 
     }
 }
@@ -442,58 +644,17 @@ void CyclopsTetrahedralizer::save_file_obj(const std::string& filename) const {
     file.close();
 }
 
+void CyclopsTetrahedralizer::dump_outer_faces(const std::vector<std::tuple<int, int>>& outer_faces) {
+    for (auto [bad_tet_idx, bad_face_idx] : outer_faces) {
+        Tetrahedron& bad_tet = tetrahedra[bad_tet_idx];
+
+        int vi_0 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][0]];
+        int vi_1 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][1]];
+        int vi_2 = bad_tet.vert_indices[Tetrahedron::face_vert_indices[bad_face_idx][2]];
+
+        std::cout << tess_points[vi_0] << ", " << tess_points[vi_1] << ", " << tess_points[vi_2] << ", #tet_idx " << bad_tet_idx << "  face_idx " << bad_face_idx << std::endl;
+    }
+
+}
+
 //void CyclopsTetrahedralizer::save_file_obj(const std::string& filename) const {
-//    std::ofstream file(filename);
-//
-//    file << "# Cyclops Tetrahedralizer" << std::endl;
-//    file << "# https://github.com/blackears/cyclops_tetrahedralizer" << std::endl;
-//    int p_idx = 0;
-//    for (const auto& p : tess_points) {
-//        file << "v " << p.x << " " << p.y << " " << p.z << " \t#" << p_idx++ + 1 << std::endl;
-//    }
-//
-//    for (auto& tet : tetrahedra) {
-//        if (!tet.valid)
-//            continue;
-//
-//        for (int i = 0; i < 4; ++i) {
-//            const Vector3& n = tet.face_planes[i].normal;
-//            file << "vn " << n.x << " " << n.y << " " << n.z << std::endl;
-//        }
-//    }
-//
-//    file << "vt 0 0" << std::endl;
-//    file << "vt .5 0" << std::endl;
-//    file << "vt .25 .5" << std::endl;
-//    file << "vt .5 0" << std::endl;
-//    file << "vt 1 0" << std::endl;
-//    file << "vt .25 .5" << std::endl;
-//    file << "vt 0 .5" << std::endl;
-//    file << "vt .5 .5" << std::endl;
-//    file << "vt .25 1" << std::endl;
-//    file << "vt .5 .5" << std::endl;
-//    file << "vt 1 .5" << std::endl;
-//    file << "vt .25 1" << std::endl;
-//
-//    int tet_count = 0;
-//    for (auto& tet : tetrahedra) {
-//        if (!tet.valid)
-//            continue;
-//
-//        for (int j = 0; j < 4; ++j) {
-//            file << "f";
-//
-//            for (int i = 0; i < 3; ++i) {
-//                file << " " << tet.vert_indices[Tetrahedron::face_vert_indices[j][i]] + 1
-//                    << "/" << (j * 3 + i) + 1
-//                    << "/" << (tet_count * 4 + j) + 1;
-//            }
-//
-//            file << std::endl;
-//        }
-//
-//        tet_count++;
-//    }
-//
-//    file.close();
-//}

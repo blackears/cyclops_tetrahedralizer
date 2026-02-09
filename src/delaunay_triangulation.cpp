@@ -113,7 +113,7 @@ void DelaunayTriangulator::create_triangles(const std::vector<Vector2>& points, 
         }
 
     }
-    std::cout << plot_svg(tess_points) << std::endl;
+    //std::cout << plot_svg(tess_points) << std::endl;
 }
 
 void DelaunayTriangulator::create_triangles_iter(const std::vector<Vector2>& points) {

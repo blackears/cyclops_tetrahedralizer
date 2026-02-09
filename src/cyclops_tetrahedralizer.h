@@ -47,7 +47,7 @@ private:
     std::array<int, 4> neighbors;
 
     Vector3 circumcenter;
-    real circumcircle_radius_squared;
+    real circumsphere_radius_squared;
     Vector3 center;
 
     std::array<Plane, 4> face_planes;
@@ -55,6 +55,14 @@ private:
 public:
 
     static Tetrahedron create_from_points(int v0_idx, int v1_idx, int v2_idx, int v3_idx, const std::vector<Vector3>& points);
+
+    real volume_times_2(const std::vector<Vector3>& points) {
+        const Vector3& p0 = points[vert_indices[0]];
+        const Vector3& p1 = points[vert_indices[1]];
+        const Vector3& p2 = points[vert_indices[2]];
+        const Vector3& p3 = points[vert_indices[3]];
+        return Math::det(p0 - p3, p1 - p3, p2 - p3);
+    }
 
     const std::array<int, 4>& get_vert_indices() const { return vert_indices; }
 
@@ -66,12 +74,17 @@ public:
         }
         return false;
     }
-    
-    bool point_in_circumsphere(const Vector3& p, const std::vector<Vector3>& points) const {
-        return (circumcenter - p).magnitude_squared() < circumcircle_radius_squared;
+
+    real dist_to_circumsphere(const Vector3& p) const {
+        return (circumcenter - p).magnitude_squared() - circumsphere_radius_squared;
+    }
+
+    bool point_in_circumsphere(const Vector3& p, real epsilon = 1e-4) const {
+        return (circumcenter - p).magnitude_squared() < circumsphere_radius_squared + epsilon;
     }
     bool contains_point(const Vector3& p, const std::vector<Vector3>& points) const;
-    int find_adjacent_tetrahedron(const Vector3& dir, const std::vector<Vector3>& points) const;
+    int find_adjacent_tetrahedron(const Vector3& dir) const;
+    int step_toward_point_adjacent_tetrahedron(const Vector3& p) const;
     real quality(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3) const;
 
     //vertex indices must wind face outward
@@ -100,7 +113,9 @@ class CyclopsTetrahedralizer {
     std::vector<Tetrahedron> tetrahedra;
 
 private:
-    void create_tetrahedrons_iter(std::vector<Tetrahedron>& tetrahedrons, const std::vector<Vector3>& points);
+    void create_tetrahedrons_iter(const std::vector<Vector3>& points);
+
+    void dump_outer_faces(const std::vector<std::tuple<int, int>>& outer_faces);
 
 public:
     const std::vector<Vector3>& get_points() const { return tess_points; }
