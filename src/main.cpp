@@ -23,7 +23,7 @@
 
 #include <iostream>
 
-#include <map>
+#include <algorithm>
 #include <string>
 
 #include "cyclops_tetrahedralizer.h"
@@ -36,6 +36,7 @@ using namespace CyclopsTetra3D;
 
 bool show_help = false;
 bool export_edges = false;
+real subdivisions = 0.0;
 std::string output_file;
 
 void process_option(std::string option, int argc, char** argv, int& option_ptr) {
@@ -51,6 +52,15 @@ void process_option(std::string option, int argc, char** argv, int& option_ptr) 
 
 	if (option == "o" || option == "out") {
 		output_file = argv[option_ptr++];
+		return;
+	}
+
+	if (option == "s" || option == "subdiv") {
+		char* last_char;
+		double result = std::strtod(argv[option_ptr++], &last_char);
+		if (*last_char == 0) {
+			subdivisions = std::max(result, 0.0);
+		}
 		return;
 	}
 }
@@ -101,9 +111,13 @@ void print_help(bool full = false) {
 
 	if (full) {
 		cout << endl;
-		cout << "\t-h, --help             help message" << endl;
-		cout << "\t-o, --out <filename>   output .obj file that will be written" << endl;
-		cout << "\t-e, --edges            export edges instead of faces" << endl;
+		cout << "\t-h, --help                  help message" << endl;
+		cout << "\t-o, --out <filename>        output .obj file that will be written" << endl;
+		cout << "\t-e, --edges                 export edges instead of faces" << endl;
+		cout << "\t-s, --subdiv <number>       if greater than 0, applies a cube grid to" << endl;
+		cout << "\t                            mesh, with cube size is the length of the max" << endl;
+		cout << "\t                            side legth of the bounding box divided into" << endl;
+		cout << "\t                            this many segments" << endl;
 	}
 	else {
 		cout << endl;
@@ -127,7 +141,6 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	//std::string output_file;
 	if (output_file.empty()) {
 		int dot_idx = source_file.find_last_of(".");
 		if (dot_idx == std::string::npos)
@@ -150,15 +163,7 @@ int main(int argc, char **argv)
 
 	//Tetrahedralize
 	CyclopsTetrahedralizer tetralizer;
-	tetralizer.create_tetrahedrons(loader.get_points(), face_vertex_indices);
-
-	//Export mesh
-	//std::vector<int> tri_mesh_vert_indices;
-	//tetralizer.get_tetrahedra_as_tri_mesh_indices(tri_mesh_vert_indices);
-	//std::vector<int> tri_mesh_face_vert_counts;
-	//tri_mesh_face_vert_counts.resize(tri_mesh_vert_indices.size() / 3);
-	//std::fill(tri_mesh_face_vert_counts.begin(), tri_mesh_face_vert_counts.end(), 3);
-	//WavefrontObjFile result(tetralizer.get_points(), tri_mesh_vert_indices, tri_mesh_face_vert_counts);
+	tetralizer.create_tetrahedrons(loader.get_points(), face_vertex_indices, subdivisions);
 
 	cout << "tessellation done" << std::endl;
 

@@ -121,7 +121,7 @@ void BVHTree3::build_from_triangles(const std::vector<Vector3>& points, const st
     build_nodes_recursive(0, nodes_used);
 }
 
-bool BVHTree3::is_inside(const Vector3& p) const {
+bool BVHTree3::is_inside(const Vector3& p, real epsilon) const {
     //Check multiple directions to minimize chance of hitting an edge
 
     int num_inside = 0;
@@ -137,6 +137,12 @@ bool BVHTree3::is_inside(const Vector3& p) const {
             [](const BVHTreeHitResult3& a, const BVHTreeHitResult3& b) { return a.distance < b.distance; });
 
         const BVHTreeHitResult3& result = hits[0];
+
+        if ((result.hit_pos - p).magnitude_squared() < epsilon * epsilon) {
+            //On surface
+            return false;
+        }
+
         const BVHTreeTriangle3& tri = triangles[result.out_index];
 
         if (tri.normal.dot(face_check_dirs[i]) < 0) {

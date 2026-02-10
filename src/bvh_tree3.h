@@ -184,7 +184,7 @@ public:
 
     void ray_cast(const Vector3& ray_origin, const Vector3& ray_direction, std::vector<BVHTreeHitResult3>& out_results) const;
 
-    bool is_inside(const Vector3& p) const;
+    bool is_inside(const Vector3& p, real epsilon = 1e-4) const;
 
 };
 

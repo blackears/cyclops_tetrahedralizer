@@ -90,7 +90,7 @@ int Tetrahedron::find_adjacent_tetrahedron(const Vector3& dir) const {
     return neighbors[best_face];
 }
 
-int Tetrahedron::step_toward_point_adjacent_tetrahedron(const Vector3& p) const {
+int Tetrahedron::step_toward_point_adjacent_tetrahedron(const Vector3& p, real epsilon) const {
     Vector3 dir = p - center;
 
     real best_dist_sq = std::numeric_limits<real>::infinity();
@@ -99,6 +99,9 @@ int Tetrahedron::step_toward_point_adjacent_tetrahedron(const Vector3& p) const 
         Vector3 f_intersect;
         if (face_planes[i].intersect_ray(center, dir, f_intersect)) {
             Vector3 offset = (f_intersect - center);
+            if (offset.magnitude_squared() < epsilon * epsilon)
+                return -1;
+
             if (offset.dot(dir) <= 0.0)
                 continue;
 
@@ -144,7 +147,7 @@ real Tetrahedron::quality(const Vector3& p0, const Vector3& p1, const Vector3& p
 
 void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& points, 
     const std::vector<int>& indices, 
-    float resolution) {
+    float subdivisions) {
 
     //Create BVH from input triangles
     BVHTree3 bvh_tree;
@@ -175,25 +178,50 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     //Add extra points for interior of mesh
     Vector3 bb_size = bb_max - bb_min;
 
-    if (resolution > 0) {
-        float max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
-        int h = max_dim / resolution;
+    if (subdivisions > 0) {
+        real max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
+        real cube_side_len = max_dim / subdivisions;
 
-        for (int xi = 0; xi <= int(bb_size.x / h); xi++) {
-            float x = bb_min.x + xi * h + rand_eps(rng_eng);
-            for (int yi = 0; yi <= int(bb_size.y / h); yi++) {
-                float y = bb_min.y + yi * h + rand_eps(rng_eng);
-                for (int zi = 0; zi <= int(bb_size.z / h); zi++) {
-                    float z = bb_min.z + zi * h + rand_eps(rng_eng);
-                    Vector3 p = Vector3(x, y, z);
+        int steps_x = ceil(bb_size.x / cube_side_len);
+        int steps_y = ceil(bb_size.y / cube_side_len);
+        int steps_z = ceil(bb_size.z / cube_side_len);
 
+        Vector3 grid_size(steps_x * cube_side_len, steps_y * cube_side_len, steps_z * cube_side_len);
+
+        for (int k = 0; k < steps_z; ++k) {
+            for (int j = 0; j < steps_y; ++j) {
+                for (int i = 0; i < steps_x; ++i) {
+                    Vector3 p = Vector3(i, j, k) * cube_side_len - grid_size / 2 + bb_min + bb_size / 2;
+                    p += Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
+                    
                     if (bvh_tree.is_inside(p)) {
                         tess_points.push_back(p);
                     }
+
                 }
             }
         }
     }
+
+    //if (subdivisions > 0) {
+    //    float max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
+    //    int h = max_dim / subdivisions;
+
+    //    for (int xi = 0; xi <= int(bb_size.x / h); xi++) {
+    //        float x = bb_min.x + xi * h + rand_eps(rng_eng);
+    //        for (int yi = 0; yi <= int(bb_size.y / h); yi++) {
+    //            float y = bb_min.y + yi * h + rand_eps(rng_eng);
+    //            for (int zi = 0; zi <= int(bb_size.z / h); zi++) {
+    //                float z = bb_min.z + zi * h + rand_eps(rng_eng);
+    //                Vector3 p = Vector3(x, y, z);
+
+    //                if (bvh_tree.is_inside(p)) {
+    //                    tess_points.push_back(p);
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 
     //Find bounding tetrahedron
     Vector3 bb_center = (bb_min + bb_max) / 2.0;
@@ -352,6 +380,9 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
                     [&](int x) { return tets_violating.count(x) > 0; }
                 ), tets_to_replace.end());
         }
+
+        if (tets_to_replace.empty())
+            continue;
 
         //Mark invalid
         for (int tet_idx : tets_to_replace) {

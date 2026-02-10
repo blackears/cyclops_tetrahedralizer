@@ -84,7 +84,7 @@ public:
     }
     bool contains_point(const Vector3& p, const std::vector<Vector3>& points) const;
     int find_adjacent_tetrahedron(const Vector3& dir) const;
-    int step_toward_point_adjacent_tetrahedron(const Vector3& p) const;
+    int step_toward_point_adjacent_tetrahedron(const Vector3& p, real epsilon = 1e-4) const;
     real quality(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3) const;
 
     //vertex indices must wind face outward
@@ -149,7 +149,7 @@ public:
     //@param points of triangles
     //@param indices of triangles (3 per triangle)
     //@param resolution spacing for extra interior points
-    void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float resolution = 0);
+    void create_tetrahedrons(const std::vector<Vector3>& points, const std::vector<int>& indices, float subdivisions = 0);
 
     void get_mesh(std::vector<Vector3>& out_points, std::vector<int>& out_indices);
 
