@@ -24,6 +24,7 @@
 #include "cyclops_tetrahedralizer.h"
 
 #include <random>
+#include <algorithm>
 #include <fstream>
 #include <set>
 #include <cassert>
@@ -157,8 +158,8 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     tess_points.reserve(points.size() + 4);
 
     //Add jitter to points to avoid degenerate cases
-    std::random_device r;
-    std::default_random_engine rng_eng(r());
+    std::random_device rd;
+    std::default_random_engine rng_eng(rd());
     rng_eng.seed(0);
     std::uniform_real_distribution<real> rand_eps(-1e-5, 1e-5);
 
@@ -203,25 +204,8 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
         }
     }
 
-    //if (subdivisions > 0) {
-    //    float max_dim = std::max(bb_size.x, std::max(bb_size.y, bb_size.z));
-    //    int h = max_dim / subdivisions;
-
-    //    for (int xi = 0; xi <= int(bb_size.x / h); xi++) {
-    //        float x = bb_min.x + xi * h + rand_eps(rng_eng);
-    //        for (int yi = 0; yi <= int(bb_size.y / h); yi++) {
-    //            float y = bb_min.y + yi * h + rand_eps(rng_eng);
-    //            for (int zi = 0; zi <= int(bb_size.z / h); zi++) {
-    //                float z = bb_min.z + zi * h + rand_eps(rng_eng);
-    //                Vector3 p = Vector3(x, y, z);
-
-    //                if (bvh_tree.is_inside(p)) {
-    //                    tess_points.push_back(p);
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
+    std::mt19937 m_eng(rd());
+    std::shuffle(tess_points.begin(), tess_points.end(), m_eng);
 
     //Find bounding tetrahedron
     Vector3 bb_center = (bb_min + bb_max) / 2.0;
@@ -249,7 +233,6 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
         tess_points));
 
     create_tetrahedrons_iter(tess_points);
-
 
     ////////////////
 //    bool inside = bvh_tree.is_inside(Vector3(0, .216, 0), 1e-3);
@@ -373,6 +356,8 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
 
             if (tets_violating.size() == 0)
                 break;
+
+            //save_file_obj("concavity.obj");
 
             //Negative volumes indicate a concavity
             //Remove all tets that had negative volume
