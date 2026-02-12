@@ -121,10 +121,11 @@ void BVHTree3::build_from_triangles(const std::vector<Vector3>& points, const st
     build_nodes_recursive(0, nodes_used);
 }
 
-bool BVHTree3::is_inside(const Vector3& p, real epsilon) const {
+bool BVHTree3::is_inside(const Vector3& p, bool include_surface, real epsilon) const {
     //Check multiple directions to minimize chance of hitting an edge
+    //int num_inside = 0;
 
-    int num_inside = 0;
+    real eps_sq = epsilon * epsilon;
 
     for (int i = 0; i < 6; i++) {
         std::vector<BVHTreeHitResult3> hits;
@@ -138,9 +139,12 @@ bool BVHTree3::is_inside(const Vector3& p, real epsilon) const {
 
         const BVHTreeHitResult3& result = hits[0];
 
-        if ((result.hit_pos - p).magnitude_squared() < epsilon * epsilon) {
-            //On surface
-            return false;
+        bool on_surface = (result.hit_pos - p).magnitude_squared() < eps_sq;
+        if (on_surface) {
+            if (!include_surface)
+                return false;
+
+            continue;
         }
 
         const BVHTreeTriangle3& tri = triangles[result.out_index];

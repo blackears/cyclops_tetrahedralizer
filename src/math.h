@@ -26,6 +26,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <iostream>
 
 namespace CyclopsTetra3D {
@@ -446,6 +447,16 @@ public:
         return a.x * (b.y * c.z - c.y * b.z)
             + b.x * (c.y * a.z - a.y * c.z)
             + c.x * (a.y * b.z - b.y * a.z);
+    }
+
+    static real dist_to_segment_squared(const Vector3& p, const Vector3& p0, const Vector3& p1) {
+        Vector3 a = p - p0;
+        Vector3 b = p1 - p0;
+
+        //Scalar for vector b that is projection of p onto segment [p1 - p0]
+        real s = std::clamp(a.dot(b) / b.dot(b), real(0.0), real(1.0));
+
+        return (b * s - p).magnitude_squared();
     }
 
     static bool triangle_contains_point(const Vector2& p, const Vector2& p0, const Vector2& p1, const Vector2& p2) {

@@ -92,21 +92,21 @@ int Tetrahedron::find_adjacent_tetrahedron(const Vector3& dir) const {
 }
 
 int Tetrahedron::step_toward_point_adjacent_tetrahedron(const Vector3& p, real epsilon) const {
-    Vector3 dir = p - center;
+    Vector3 p_offset = p - center;
 
     real best_dist_sq = std::numeric_limits<real>::infinity();
     int best_face = -1;
     for (int i = 0; i < 4; i++) {
         Vector3 f_intersect;
-        if (face_planes[i].intersect_ray(center, dir, f_intersect)) {
-            Vector3 offset = (f_intersect - center);
-            if (offset.magnitude_squared() < epsilon * epsilon)
+        if (face_planes[i].intersect_ray(center, p_offset, f_intersect)) {
+            Vector3 isect_offset = (f_intersect - center);
+            if (isect_offset.magnitude_squared() < epsilon * epsilon)
                 return -1;
 
-            if (offset.dot(dir) <= 0.0)
+            if (isect_offset.dot(p_offset) <= 0.0)
                 continue;
 
-            real dist_sq = offset.magnitude_squared();
+            real dist_sq = isect_offset.magnitude_squared();
             if (dist_sq < best_dist_sq) {
                 best_dist_sq = dist_sq;
                 best_face = i;
@@ -114,7 +114,7 @@ int Tetrahedron::step_toward_point_adjacent_tetrahedron(const Vector3& p, real e
         }
     }
 
-    if (best_face == -1 || best_dist_sq > dir.magnitude_squared())
+    if (best_face == -1 || best_dist_sq > p_offset.magnitude_squared())
         return -1;
 
     return neighbors[best_face];
@@ -195,7 +195,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
                     Vector3 p = Vector3(i, j, k) * cube_side_len - grid_size / 2 + bb_min + bb_size / 2;
                     p += Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
                     
-                    if (bvh_tree.is_inside(p)) {
+                    if (bvh_tree.is_inside(p, false)) {
                         tess_points.push_back(p);
                     }
 
@@ -245,7 +245,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
     for (int i = 0; i < tetrahedra.size(); i++) {
         Tetrahedron& tet = tetrahedra[i];
         if (tet.valid) {
-            if (!bvh_tree.is_inside(tet.center))
+            if (!bvh_tree.is_inside(tet.center, true))
             {
                 tet.valid = false;
             }
