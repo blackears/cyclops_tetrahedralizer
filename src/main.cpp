@@ -112,7 +112,9 @@ void print_help(bool full = false) {
 	if (full) {
 		cout << endl;
 		cout << "\t-h, --help                  help message" << endl;
-		cout << "\t-o, --out <filename>        output .obj file that will be written" << endl;
+		cout << "\t-o, --out <filename>        output .obj file that will be written.  If not" << endl;
+		cout << "\t                            specified, a file will be written where the suffix" << endl;
+		cout << "\t                            \"_tetra\" is appended to the input file name." << endl;
 		cout << "\t-e, --edges                 export edges instead of faces" << endl;
 		cout << "\t-s, --subdiv <number>       if greater than 0, applies a cube grid to" << endl;
 		cout << "\t                            mesh, with cube size is the length of the max" << endl;
