@@ -195,7 +195,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
                     Vector3 p = Vector3(i, j, k) * cube_side_len - grid_size / 2 + bb_min + bb_size / 2;
                     p += Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
                     
-                    if (bvh_tree.is_inside(p, false)) {
+                    if (true || bvh_tree.is_inside(p, false)) {
                         tess_points.push_back(p);
                     }
 
@@ -234,13 +234,6 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
     create_tetrahedrons_iter(tess_points);
 
-    ////////////////
-//    bool inside = bvh_tree.is_inside(Vector3(0, .216, 0), 1e-3);
-    //bool inside = bvh_tree.is_inside(tetrahedra[13394].center, 1e-3);
-    //int j = 9;
-    //bool inside2 = bvh_tree.is_inside(tetrahedra[13394].center, 1e-3);
-    ////////////////
-
     //Remove exterior tetrahedrons
     for (int i = 0; i < tetrahedra.size(); i++) {
         Tetrahedron& tet = tetrahedra[i];
@@ -271,11 +264,17 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
         }
 
         //Walk toward containing tetrahedron
+        std::set<int> visited_tets;
         while (tet_idx != -1) {
             Tetrahedron& tet = tetrahedra[tet_idx];
             int next_tet_idx = tet.step_toward_point_adjacent_tetrahedron(p);
             if (next_tet_idx == -1)
                 break;
+
+            //Keep track of already visitd tets for degenerate cases where p lies on boundary
+            if (visited_tets.find(next_tet_idx) != visited_tets.end())
+                break;
+            visited_tets.emplace(tet_idx);
 
             tet_idx = next_tet_idx;
         }
