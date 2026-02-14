@@ -29,9 +29,12 @@
 #include <algorithm>
 #include <iostream>
 
+#include "predicates/predicates.h"
+
 namespace CyclopsTetra3D {
 
-typedef float real;
+typedef double real;
+//typedef float real;
 
 
 struct Vector2 {
@@ -521,6 +524,73 @@ public:
             v /= det;
             return p0 + v;
         }
+    }
+
+    //@return a positive value if the points pa, pb, and pc occur in counterclockwise order; 
+    // a negative value if they occur in clockwise order; and zero if they are collinear.  
+    // The result is also a rough approximation of twice the signed area of the triangle 
+    // defined by the three points.
+    //
+    // This uses exact arithmetic to ensure a correct answer and avoid round off errors for 
+    // determinants close to zero.
+    static real test_orient_2d(const Vector2& pa, const Vector2& pb, const Vector2& pc) {
+        double a[2] = { pa.x, pa.y };
+        double b[2] = { pb.x, pb.y };
+        double c[2] = { pc.x, pc.y };
+
+        return orient2d(a, b, c);
+    }
+
+    //@return a positive value if the point pd lies below the plane passing through 
+    // pa, pb, and pc; "below" is defined so that pa, pb, and pc appear in 
+    // counterclockwise order when viewed from above the plane.  Returns a negative 
+    // value if pd lies above the plane.  Returns zero if the points are coplanar.  
+    // The result is also a rough approximation of six times the signed volume of the 
+    // tetrahedron defined by the four points.
+    //
+    // This uses exact arithmetic to ensure a correct answer and avoid round off errors for 
+    // determinants close to zero.
+    static real test_orient_3d(const Vector3& pa, const Vector3& pb, const Vector3& pc, const Vector3& pd) {
+        double a[3] = { pa.x, pa.y, pa.z };
+        double b[3] = { pb.x, pb.y, pb.z };
+        double c[3] = { pc.x, pc.y, pc.z };
+        double d[3] = { pd.x, pd.y, pd.z };
+
+        return orient3d(a, b, c, d);
+    }
+
+    //@return a positive value if the point pd lies inside the circle passing 
+    // through pa, pb, and pc; a negative value if it lies outside; and zero 
+    // if the four points are cocircular.  The points pa, pb, and pc must be 
+    // in counterclockwise order, or the sign of the result will be reversed.
+    //
+    // This uses exact arithmetic to ensure a correct answer and avoid round off errors for 
+    // determinants close to zero.
+    static real test_in_circle(const Vector2& pa, const Vector2& pb, const Vector2& pc, const Vector2& pd) {
+        double a[2] = { pa.x, pa.y };
+        double b[2] = { pb.x, pb.y };
+        double c[2] = { pc.x, pc.y };
+        double d[2] = { pd.x, pd.y };
+
+        return incircle(a, b, c, d);
+    }
+
+    //@return a positive value if the point pe lies inside the sphere passing through 
+    // pa, pb, pc, and pd; a negative value if it lies outside; and zero if the five 
+    // points are cospherical.  The points pa, pb, pc, and pd must be ordered so that 
+    // they have a positive orientation (as defined by orient3d()), or the sign of the 
+    // result will be reversed.
+    //
+    // This uses exact arithmetic to ensure a correct answer and avoid round off errors for 
+    // determinants close to zero.
+    static real test_in_sphere(const Vector3& pa, const Vector3& pb, const Vector3& pc, const Vector3& pd, const Vector3& pe) {
+        double a[3] = { pa.x, pa.y, pa.z };
+        double b[3] = { pb.x, pb.y, pb.z };
+        double c[3] = { pc.x, pc.y, pc.z };
+        double d[3] = { pd.x, pd.y, pd.z };
+        double e[3] = { pe.x, pe.y, pe.z };
+
+        return insphere(a, b, c, d, e);
     }
 
 };

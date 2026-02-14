@@ -1,0 +1,3 @@
+[submodule "libigl-predicates"]
+	path = libigl-predicates
+	url = https://github.com/libigl/libigl-predicates

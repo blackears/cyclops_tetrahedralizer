@@ -27,7 +27,7 @@ option(BUILD_EXECUTABLE "Build executable" ON)
 option(BUILD_LIBRARY "Build library" OFF)
 
 
-file(GLOB_RECURSE sources src/*.cpp src/*.h)
+file(GLOB_RECURSE sources src/*.cpp src/*.h src/predicates/*.c src/predicates/*.h)
 
 if(BUILD_LIBRARY)
   add_library(cyclopsTetrahedralizerLib STATIC ${sources})

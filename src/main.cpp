@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <string>
 
+#include "math.h"
 #include "cyclops_tetrahedralizer.h"
 #include "wavefront_obj_file.h"
 
@@ -127,8 +128,19 @@ void print_help(bool full = false) {
 	}
 }
 
+void test() {
+	Vector3 a;
+	Vector3 b;
+	Vector3 c;
+	Vector3 d;
+
+	Math::test_orient_3d(a, b, c, d);
+}
+
 int main(int argc, char **argv)
 {
+	test();
+
 	//std::map<std::string, std::string> options;
 	std::string source_file;
 
