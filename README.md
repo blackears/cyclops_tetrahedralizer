@@ -31,8 +31,11 @@ Example usage:
 
 ## Compiling
 
-Get [CMake](https://cmake.org/)
+### Requirements
 
+[CMake](https://cmake.org/) is required to build this.
+
+### Building the project
 
 From the download directory
 
