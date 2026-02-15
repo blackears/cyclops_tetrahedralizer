@@ -30,6 +30,8 @@
 #include "cyclops_tetrahedralizer.h"
 #include "wavefront_obj_file.h"
 
+#include "predicates.h"
+
 using namespace std;
 using namespace CyclopsTetra3D;
 
@@ -137,9 +139,17 @@ void test() {
 	Math::test_orient_3d(a, b, c, d);
 }
 
+void test2() {
+	double a[3];
+	double b[3];
+	double c[3];
+	double d[3];
+	orient3d(a, b, c, d);
+}
+
 int main(int argc, char **argv)
 {
-	test();
+	test2();
 
 	//std::map<std::string, std::string> options;
 	std::string source_file;

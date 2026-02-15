@@ -29,7 +29,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "predicates/predicates.h"
+#include "predicates.h"
 
 namespace CyclopsTetra3D {
 
