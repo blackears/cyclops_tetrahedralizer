@@ -319,6 +319,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
         //Find tets which have circumcenters that include point
         std::vector<int> tets_to_scan;
         std::vector<int> tets_to_replace;
+        //std::vector<double> tets_offset_deltas;
         std::set<int> tets_viewed;
         tets_to_scan.push_back(tet_idx);
         tets_to_replace.push_back(tet_idx);
@@ -338,7 +339,9 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
                 tets_viewed.emplace(neighbor_tet_idx);
                 
                 Tetrahedron& neighbor_tet = tetrahedra[neighbor_tet_idx];
-                if ((neighbor_tet.circumcenter - p).magnitude_squared() < neighbor_tet.circumsphere_radius_squared) {
+                double offset_delta = (neighbor_tet.circumcenter - p).magnitude_squared() - neighbor_tet.circumsphere_radius_squared;
+                //tets_offset_deltas.push_back(offset_delta);
+                if (offset_delta < 1e-10) {
                     tets_to_replace.push_back(neighbor_tet_idx);
                     tets_to_scan.push_back(neighbor_tet_idx);
                 }
