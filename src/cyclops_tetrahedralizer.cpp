@@ -24,6 +24,7 @@
 #include "cyclops_tetrahedralizer.h"
 
 #include <random>
+#include <iterator>
 #include <algorithm>
 #include <fstream>
 #include <set>
@@ -145,6 +146,22 @@ real Tetrahedron::quality(const Vector3& p0, const Vector3& p1, const Vector3& p
     return s * vol / (rms * rms * rms);
 }
 
+void CyclopsTetrahedralizer::sort_kd_tree(std::vector<Vector3>::iterator& begin, std::vector<Vector3>::iterator& end, int axis) const {
+    std::sort(begin, end, [axis](Vector3 a, Vector3 b) { return a[axis] < b[axis]; });
+
+    int size = std::distance(begin, end);
+    int left_size = (size - 1) / 2;
+    int right_size = size - left_size - 1;
+    
+    int axis_next = (axis + 1) % 3;
+
+    if (left_size >= 2)
+        sort_kd_tree(begin, begin + left_size, axis_next);
+
+    if (right_size >= 2)
+        sort_kd_tree(begin + left_size + 1, end, axis_next);
+}
+
 
 void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& points, 
     const std::vector<int>& indices, 
@@ -159,13 +176,15 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
     //Add jitter to points to avoid degenerate cases
     std::random_device rd;
-    std::default_random_engine rng_eng(rd());
-    rng_eng.seed(0);
-    std::uniform_real_distribution<real> rand_eps(-1e-5, 1e-5);
+    //std::default_random_engine rng_eng(rd());
+    //rng_eng.seed(0);
+    //std::uniform_real_distribution<real> rand_eps(-1e-5, 1e-5);
 
     for (const Vector3& p : points) {
-        Vector3 jit_p = p + Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
-        tess_points.push_back(jit_p);
+        //Vector3 jit_p = p + Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
+        //tess_points.push_back(jit_p);
+
+        tess_points.push_back(p);
     }
 
     //Find bounding box
@@ -193,7 +212,7 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
             for (int j = 0; j < steps_y; ++j) {
                 for (int i = 0; i < steps_x; ++i) {
                     Vector3 p = Vector3(i, j, k) * cube_side_len - grid_size / 2 + bb_min + bb_size / 2;
-                    p += Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
+                    //p += Vector3(rand_eps(rng_eng), rand_eps(rng_eng), rand_eps(rng_eng));
                     
                     if (true || bvh_tree.is_inside(p, false)) {
                         tess_points.push_back(p);
@@ -204,8 +223,19 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
         }
     }
 
+    //Randomize point order
     std::mt19937 m_eng(rd());
     std::shuffle(tess_points.begin(), tess_points.end(), m_eng);
+
+    //Add kd tree ordering in increasingly large rounds to optimize insertion speed
+    // (Biased randomized insertion orders)
+    int num_rounds = ceil(log2(tess_points.size()));
+    for (int i = 1; i < num_rounds; ++i) {
+        int size = 1 << i;
+        int idx_from = size - 1;
+        int idx_to = (i == num_rounds - 1) ? (int)tess_points.size() : idx_from + size;
+        sort_kd_tree(tess_points.begin() + idx_from, tess_points.begin() + idx_to, 0);
+    }
 
     //Find bounding tetrahedron
     Vector3 bb_center = (bb_min + bb_max) / 2.0;
@@ -249,19 +279,21 @@ void CyclopsTetrahedralizer::create_tetrahedrons(const std::vector<Vector3>& poi
 
 void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>& points) {
     //Last 4 points are bounding tetrahedron
+    int last_added_tet_idx = 0;
+
     for (int p_idx = 0; p_idx < points.size() - 4; p_idx++) {
         Vector3 p = points[p_idx];
 
-        int tet_idx = 0;
+        int tet_idx = last_added_tet_idx;
 
         //Skip forward to first valid tetrahedron
-        while (tet_idx != -1) {
-            Tetrahedron& tri = tetrahedra[tet_idx];
-            if (tri.valid)
-                break;
+        //while (tet_idx != -1) {
+        //    Tetrahedron& tri = tetrahedra[tet_idx];
+        //    if (tri.valid)
+        //        break;
 
-            tet_idx++;
-        }
+        //    tet_idx++;
+        //}
 
         //Walk toward containing tetrahedron
         std::set<int> visited_tets;
@@ -430,6 +462,8 @@ void CyclopsTetrahedralizer::create_tetrahedrons_iter(const std::vector<Vector3>
                 }
             }
         }
+
+        last_added_tet_idx = tets_added.back();
     }
 }
 

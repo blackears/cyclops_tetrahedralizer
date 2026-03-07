@@ -113,6 +113,7 @@ class CyclopsTetrahedralizer {
     std::vector<Tetrahedron> tetrahedra;
 
 private:
+    void sort_kd_tree(std::vector<Vector3>::iterator& begin, std::vector<Vector3>::iterator& end, int axis) const;
     void create_tetrahedrons_iter(const std::vector<Vector3>& points);
 
     void dump_outer_faces(const std::vector<std::tuple<int, int>>& outer_faces);
